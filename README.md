@@ -26,6 +26,29 @@ Para probar el build de producción sin generar instalador:
 npm start
 ```
 
+### Si sale "Electron failed to install correctly"
+
+Pasa en Windows cuando el antivirus interrumpe la descarga del binario de Electron
+durante `npm install` y deja `node_modules/electron/dist` a medias.
+
+El proyecto trae un reparador que no necesita descargar nada: busca el zip de Electron
+en las cachés que ya tienes en tu equipo (la de npm y la de electron-builder) y lo extrae
+donde corresponde.
+
+```bash
+npm run fix:electron
+```
+
+Corre solo después de cada `npm install`, y también antes de `npm run dev`.
+Si te dice que no encontró el zip, bájalo de
+[releases de Electron](https://github.com/electron/electron/releases/tag/v31.7.7)
+(`electron-v31.7.7-win32-x64.zip`), déjalo en `%LOCALAPPDATA%\electron\Cache\`
+y vuelve a correr el comando.
+
+> La versión de Electron está fijada en 31.7.7 (y electron-builder en 24.13.3) a propósito:
+> es la que ya está descargada y probada en esta máquina, así no hay que volver a bajar
+> 100 MB ni pelear con el antivirus.
+
 ## Generar el instalable
 
 El instalador se genera **para el sistema donde lo corres** — electron-builder no puede
@@ -107,6 +130,8 @@ no te deja el archivo a medias.
 electron/
   main.js            Proceso principal: ventana, persistencia, diálogos, notificaciones
   preload.cjs        Puente seguro (contextBridge) entre el sistema y la interfaz
+scripts/
+  fix-electron.mjs   Repara el binario de Electron desde las cachés locales
 renderer/
   index.html
   src/
