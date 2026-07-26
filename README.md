@@ -60,7 +60,7 @@ npm run dist
 
 | Dónde lo corres | Qué obtienes en `release/` |
 | --- | --- |
-| Windows | `NotaFlow Setup 1.0.0.exe` (instalador NSIS, elige carpeta, crea accesos directos) |
+| Windows | `NotaFlow Setup 1.0.0.exe` (instalador NSIS, crea accesos directos) |
 | macOS   | `NotaFlow-1.0.0.dmg` (Intel y Apple Silicon) |
 | Linux   | `.AppImage` y `.deb` |
 
@@ -69,6 +69,15 @@ siempre que estés en ese sistema operativo.
 
 > En macOS el `.dmg` sale sin firmar. La primera vez ábrelo con clic derecho → *Abrir*,
 > o permítelo en *Ajustes del Sistema → Privacidad y seguridad*.
+
+En Windows la instalación es **por usuario y a carpeta fija**: siempre va a
+`%LOCALAPPDATA%\Programs\notaflow`. No se puede elegir otra ruta, a propósito —
+así el desinstalador siempre sabe dónde está todo y no quedan instalaciones huérfanas.
+Tampoco pide permisos de administrador.
+
+Al desinstalar **no se borran tus datos** (`%APPDATA%\NotaFlow\notaflow-data.json`),
+para que reinstalar o actualizar no te haga perder tus cursos. Si de verdad quieres
+empezar de cero, borra esa carpeta a mano.
 
 Para empaquetar sin crear instalador (útil para probar): `npm run pack`.
 
