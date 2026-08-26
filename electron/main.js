@@ -12,7 +12,11 @@ import path from 'node:path'
 import fs from 'node:fs/promises'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const isDev = !app.isPackaged
+// Solo se apunta al servidor de Vite cuando se arranca con `npm run dev`,
+// que exporta NODE_ENV=development. Con `npm run start` (build + electron)
+// no hay servidor: hay que cargar el dist ya construido.
+const isPacked = app.isPackaged
+const isDev = !isPacked && process.env.NODE_ENV === 'development'
 
 // --- Rutas de datos -----------------------------------------
 const dataFile = () => path.join(app.getPath('userData'), 'notaflow-data.json')
@@ -87,7 +91,7 @@ function buildMenu() {
         { role: 'zoomOut', label: 'Alejar' },
         { type: 'separator' },
         { role: 'togglefullscreen', label: 'Pantalla completa' },
-        ...(isDev ? [{ role: 'toggleDevTools', label: 'Herramientas de desarrollo' }] : []),
+        ...(isPacked ? [] : [{ role: 'toggleDevTools', label: 'Herramientas de desarrollo' }]),
       ],
     },
   ]

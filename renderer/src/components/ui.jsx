@@ -148,6 +148,54 @@ export function Select({ value, options, onChange, className = '' }) {
   )
 }
 
+// Campo de tipo de evaluación: desplegable con los tipos fijos más la
+// opción "Otro…", que abre un diálogo para escribir el nombre.
+// Si el valor guardado no está en la lista (tipo personalizado o venido de
+// un respaldo del móvil), se antepone como opción para no perderlo.
+const OTRO_OPT = '__otro__'
+
+export function TypeField({ value, options, maxLength = 24, fallback = 'Otro', onChange }) {
+  const [asking, setAsking] = useState(false)
+  const [draft, setDraft] = useState('')
+  const isCustom = value != null && value !== '' && !options.includes(value)
+  const opts = isCustom ? [value, ...options] : options
+
+  const ask = () => { setDraft(isCustom ? value : ''); setAsking(true) }
+  const save = () => { onChange(draft.trim() || fallback); setAsking(false) }
+
+  return (
+    <div className="select">
+      <select
+        value={value ?? ''}
+        aria-label="Tipo de evaluación"
+        onChange={(e) => { if (e.target.value === OTRO_OPT) ask(); else onChange(e.target.value) }}
+      >
+        {opts.map((o) => <option key={o} value={o}>{o}</option>)}
+        <option value={OTRO_OPT}>Otro…</option>
+      </select>
+      <Icon name="chevron-down" size={13} color={colors.textSoft} />
+
+      <Modal open={asking} onClose={() => setAsking(false)} title="Tipo de evaluación" width={380}>
+        <p className="sheet-text">Escribe el nombre del tipo, como aparece en tu sílabo.</p>
+        <input
+          className="text"
+          style={{ marginTop: 12 }}
+          autoFocus
+          value={draft}
+          maxLength={maxLength}
+          placeholder="Rúbrica, Quiz, Control de lectura…"
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') save() }}
+        />
+        <div className="sheet-actions">
+          <button className="btn ghost" onClick={() => setAsking(false)}>Cancelar</button>
+          <button className="btn primary" onClick={save}>Guardar</button>
+        </div>
+      </Modal>
+    </div>
+  )
+}
+
 // Botón de información (ⓘ) con explicación breve.
 export function InfoButton({ title, text, size = 14 }) {
   const [open, setOpen] = useState(false)

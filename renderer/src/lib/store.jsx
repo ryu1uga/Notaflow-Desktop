@@ -68,7 +68,7 @@ function reducer(state, action) {
                 ...c,
                 evaluations: [
                   ...c.evaluations,
-                  { id: newId(), name: `Evaluación ${c.evaluations.length + 1}`, type: 'Evaluación', week: null, date: null, weight: 0, grade: null },
+                  { id: newId(), name: `Evaluación ${c.evaluations.length + 1}`, type: 'Examen', week: null, date: null, weight: 0, grade: null },
                 ],
               }
             : c,

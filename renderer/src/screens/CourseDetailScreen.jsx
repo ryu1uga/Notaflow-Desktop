@@ -6,12 +6,11 @@ import {
 } from '../lib/calc.js'
 import { evalEffectiveDate, weekFromDate, notifyFireAt } from '../lib/schedule.js'
 import {
-  Card, Badge, Progress, Icon, NumField, Switch, Select,
+  Card, Badge, Progress, Icon, NumField, Switch, TypeField,
   InfoButton, DateField, Confirm,
 } from '../components/ui.jsx'
 import { colors, palette, statusColor } from '../theme.js'
-
-const TYPES = ['Examen', 'Proyecto', 'Práctica', 'Tarea', 'Exposición', 'Control', 'Evaluación', 'Otro']
+import { TYPES, OTHER, MAX_TIPO } from '../lib/evalTypes.js'
 const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
 
 const two = (n) => String(n).padStart(2, '0')
@@ -251,7 +250,13 @@ export default function CourseDetailScreen({ course, onBack }) {
                   aria-label="Nombre de la evaluación"
                 />
 
-                <Select value={e.type} options={TYPES} onChange={(t) => patchEval(e.id, { type: t })} />
+                <TypeField
+                  value={e.type}
+                  options={TYPES}
+                  maxLength={MAX_TIPO}
+                  fallback={OTHER}
+                  onChange={(t) => patchEval(e.id, { type: t })}
+                />
 
                 <DateField value={e.date} onChange={(iso) => setEvalDate(e.id, iso)} />
 
