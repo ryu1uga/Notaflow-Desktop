@@ -494,7 +494,9 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity: 1; }
   border-bottom: 1px solid var(--border);
 }
 .tt-dayhead.today { color: var(--brand); }
-.tt-body { position: relative; padding-top: 10px; }
+/* El relleno de abajo es para la etiqueta de la última hora: va centrada en
+   su línea, así que asoma 6 px por debajo y .tt la recortaba. */
+.tt-body { position: relative; padding: 10px 0; }
 .tt-gutter { position: relative; }
 .tt-hour {
   position: absolute; right: 9px; transform: translateY(-50%);
@@ -551,3 +553,56 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity: 1; }
    reparten el ancho a medias, así que "Virtual" nunca se recorta. */
 .class-row .seg { display: flex; width: 100%; }
 .class-row .seg button { flex: 1; padding: 6px 8px; text-align: center; }
+
+/* ---------- Impresión del horario (A4 apaisado) ---------- */
+/* En pantalla no se ven: son la cabecera y la leyenda de la hoja. */
+.tt-print-head, .tt-legend { display: none; }
+
+@media print {
+  @page { size: A4 landscape; margin: 10mm; }
+
+  /* Los colores de los bloques son la mitad de la información del horario:
+     sin esto Chromium los descarta al imprimir. */
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+  /* Fuera todo lo que no es el horario. */
+  .sidebar, .page-head, .card.next-class, .toast, .backdrop { display: none !important; }
+  .page .hint { display: none; }
+
+  html, body, #root { height: auto; overflow: visible; background: #fff; }
+  .app { display: block; height: auto; }
+  .main { overflow: visible; }
+  .page, .page.wide { max-width: none; margin: 0; padding: 0; }
+  .card { border: 0; box-shadow: none; padding: 0; margin: 0 !important; background: #fff; }
+
+  .tt-print-head {
+    display: flex; align-items: baseline; justify-content: space-between;
+    gap: 12px; margin-bottom: 9px;
+  }
+  .tt-print-head h1 { margin: 0; font-size: 17px; font-weight: 800; }
+  .tt-print-head span { font-size: 11px; color: var(--text-soft); }
+
+  /* Sin desplazamiento y con las columnas repartidas en el ancho de la hoja. */
+  .tt { overflow: visible; }
+  .tt-head, .tt-body { grid-template-columns: 42px repeat(var(--tt-cols), 1fr); }
+  .tt-dayhead { font-size: 11.5px; padding-bottom: 7px; }
+  .tt-hour { font-size: 9.5px; right: 7px; }
+
+  /* En papel no existe "hoy" ni la línea de la hora actual. */
+  .tt-col.today { background: transparent; }
+  .tt-dayhead.today { color: var(--text-soft); }
+  .tt-now { display: none; }
+
+  .tt-block { break-inside: avoid; box-shadow: none; }
+  .tt-block-name { font-size: 10.5px; }
+  .tt-block-time { font-size: 9px; }
+  .tt-block-meta { font-size: 8.5px; }
+
+  .tt-legend {
+    display: flex; flex-wrap: wrap; gap: 5px 16px;
+    margin-top: 9px; padding-top: 7px; border-top: 1px solid var(--border);
+    font-size: 10.5px; color: var(--text-soft);
+  }
+  .tt-legend span { display: inline-flex; align-items: center; gap: 5px; }
+  .tt-legend i { width: 9px; height: 9px; border-radius: 3px; }
+}
