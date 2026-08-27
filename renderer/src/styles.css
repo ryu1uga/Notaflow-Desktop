@@ -413,7 +413,7 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity: 1; }
 @media (max-width: 900px) {
   .grid2, .grid3 { grid-template-columns: 1fr; }
   .class-head { display: none; }
-  .class-row { grid-template-columns: 1fr 1fr; row-gap: 6px; }
+  .class-row { grid-template-columns: 1fr 1fr; row-gap: 6px; min-width: 0; }
   .sidebar { width: 76px; padding: 18px 10px 12px; }
   .brand p, .nav button span, .sidebar-foot { display: none; }
   .brand h1 { font-size: 15px; text-align: center; }
@@ -482,11 +482,14 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity: 1; }
 .tt-block.compact { flex-direction: row; align-items: center; gap: 7px; padding: 2px 8px; }
 
 /* Tarjeta "Clases" del detalle del curso */
-.class-table { width: 100%; margin-top: 4px; }
+.class-table { width: 100%; margin-top: 4px; overflow-x: auto; }
 .class-head, .class-row {
   display: grid;
-  grid-template-columns: 128px 104px 104px 132px minmax(120px, 1fr) 132px 30px;
+  grid-template-columns: 104px 100px 100px 192px minmax(116px, 1fr) 124px 30px;
   align-items: center; gap: 8px;
+  /* Ancho mínimo de las 7 columnas. Con la ventana angosta la tabla se
+     desplaza en horizontal en vez de recortar "Aula" y el botón de borrar. */
+  min-width: 814px;
 }
 .class-head {
   padding: 0 0 8px; border-bottom: 1px solid var(--slate100);
@@ -495,3 +498,7 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity: 1; }
 }
 .class-row { padding: 7px 0; border-bottom: 1px solid var(--slate50); }
 .class-row .select { width: 100%; }
+/* En la tabla, el segmentado ocupa toda su celda y los dos botones se
+   reparten el ancho a medias, así que "Virtual" nunca se recorta. */
+.class-row .seg { display: flex; width: 100%; }
+.class-row .seg button { flex: 1; padding: 6px 8px; text-align: center; }

@@ -340,10 +340,6 @@ export default function CourseDetailScreen({ course, onBack }) {
           Los días y horas en que te toca este curso. Aparecen todos juntos en la pestaña Horario.
         </p>
 
-        <datalist id="etiquetas-de-bloque">
-          {BLOCK_LABELS.map((l) => <option key={l} value={l} />)}
-        </datalist>
-
         {sessions.length > 0 && (
           <div className="class-table">
             <div className="class-head">
@@ -381,9 +377,18 @@ export default function CourseDetailScreen({ course, onBack }) {
                   ))}
                 </div>
 
-                <input className="text" list="etiquetas-de-bloque" maxLength={MAX_LABEL}
-                  aria-label="Tipo de bloque" placeholder="Teoría, Laboratorio…"
-                  value={s.label || ''} onChange={(ev) => patchSession(s.id, { label: ev.target.value })} />
+                <TypeField
+                  value={s.label || ''}
+                  options={BLOCK_LABELS}
+                  maxLength={MAX_LABEL}
+                  fallback=""
+                  emptyLabel="Sin bloque"
+                  label="Tipo de bloque"
+                  title="Tipo de bloque"
+                  hint="Escribe cómo se llama este bloque, como aparece en tu horario."
+                  placeholder="Asesoría, Práctica dirigida…"
+                  onChange={(l) => patchSession(s.id, { label: l })}
+                />
 
                 <input className="text" maxLength={MAX_ROOM} aria-label="Aula"
                   placeholder={s.mode === 'virtual' ? 'Sala, plataforma…' : 'B-204'}

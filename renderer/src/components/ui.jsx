@@ -148,13 +148,21 @@ export function Select({ value, options, onChange, className = '' }) {
   )
 }
 
-// Campo de tipo de evaluación: desplegable con los tipos fijos más la
-// opción "Otro…", que abre un diálogo para escribir el nombre.
+// Desplegable con opciones fijas más "Otro…", que abre un diálogo para
+// escribir un valor libre. Lo usan el tipo de evaluación y el tipo de bloque
+// de clase; los textos del diálogo llegan por props.
 // Si el valor guardado no está en la lista (tipo personalizado o venido de
 // un respaldo del móvil), se antepone como opción para no perderlo.
 const OTRO_OPT = '__otro__'
 
-export function TypeField({ value, options, maxLength = 24, fallback = 'Otro', onChange }) {
+export function TypeField({
+  value, options, maxLength = 24, fallback = 'Otro', onChange,
+  label = 'Tipo de evaluación',
+  title = 'Tipo de evaluación',
+  hint = 'Escribe el nombre del tipo, como aparece en tu sílabo.',
+  placeholder = 'Rúbrica, Quiz, Control de lectura…',
+  emptyLabel,   // si viene, se ofrece una opción sin valor (p. ej. "Sin bloque")
+}) {
   const [asking, setAsking] = useState(false)
   const [draft, setDraft] = useState('')
   const isCustom = value != null && value !== '' && !options.includes(value)
@@ -167,23 +175,24 @@ export function TypeField({ value, options, maxLength = 24, fallback = 'Otro', o
     <div className="select">
       <select
         value={value ?? ''}
-        aria-label="Tipo de evaluación"
+        aria-label={label}
         onChange={(e) => { if (e.target.value === OTRO_OPT) ask(); else onChange(e.target.value) }}
       >
+        {emptyLabel ? <option value="">{emptyLabel}</option> : null}
         {opts.map((o) => <option key={o} value={o}>{o}</option>)}
         <option value={OTRO_OPT}>Otro…</option>
       </select>
       <Icon name="chevron-down" size={13} color={colors.textSoft} />
 
-      <Modal open={asking} onClose={() => setAsking(false)} title="Tipo de evaluación" width={380}>
-        <p className="sheet-text">Escribe el nombre del tipo, como aparece en tu sílabo.</p>
+      <Modal open={asking} onClose={() => setAsking(false)} title={title} width={380}>
+        <p className="sheet-text">{hint}</p>
         <input
           className="text"
           style={{ marginTop: 12 }}
           autoFocus
           value={draft}
           maxLength={maxLength}
-          placeholder="Rúbrica, Quiz, Control de lectura…"
+          placeholder={placeholder}
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter') save() }}
         />

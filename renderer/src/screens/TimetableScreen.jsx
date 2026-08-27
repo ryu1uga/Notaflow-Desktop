@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { useStore } from '../lib/store.jsx'
 import {
   WEEK_ORDER, dayName, MODE_LABEL, isVirtual,
@@ -34,17 +34,23 @@ function whenText(next, now) {
 export default function TimetableScreen({ onOpen }) {
   const { state } = useStore()
   const [onlyActive, setOnlyActive] = useState(true)
-  const now = new Date()
+  // El reloj se refresca cada minuto: así la línea de "ahora" y la cuenta
+  // regresiva de la próxima clase no se quedan congeladas.
+  const [now, setNow] = useState(() => new Date())
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 60000)
+    return () => clearInterval(id)
+  }, [])
 
   const sessions = useMemo(
     () => allSessions(state.courses, { onlyActive, date: now }),
-    [state.courses, onlyActive],
+    [state.courses, onlyActive, now],
   )
   const byDay = useMemo(
     () => sessionsByDay(state.courses, { onlyActive, date: now }),
-    [state.courses, onlyActive],
+    [state.courses, onlyActive, now],
   )
-  const next = useMemo(() => nextClass(state.courses, now), [state.courses])
+  const next = useMemo(() => nextClass(state.courses, now), [state.courses, now])
 
   // Días a mostrar: los que tienen clase. Si no hay ninguno, de lunes a viernes.
   const conClase = WEEK_ORDER.filter((d) => (byDay[d] || []).length > 0)
@@ -109,7 +115,9 @@ export default function TimetableScreen({ onOpen }) {
               ))}
             </div>
 
-            <div className="tt-body" style={{ height }}>
+            {/* El +10 compensa el padding-top de .tt-body (box-sizing: border-box):
+                si no, la última hora cae fuera de las columnas. */}
+            <div className="tt-body" style={{ height: height + 10 }}>
               <div className="tt-gutter">
                 {hours.map((m) => (
                   <span key={m} className="tt-hour" style={{ top: (m - from) * PX_PER_MIN }}>{fmtTime(m)}</span>
