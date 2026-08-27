@@ -7,6 +7,9 @@
 //  Las dos apps intercambian el mismo JSON de respaldo, así que si
 //  cambias algo aquí, copia el archivo al otro repo.
 //
+//  Además de las clases, el horario puede tener bloques libres (trabajo,
+//  prácticas…) que viven en state.blocks; están documentados más abajo.
+//
 //  Un bloque de clase vive en course.sessions y se ve así:
 //    { id, day, start: 'HH:MM', end: 'HH:MM', mode, label, room }
 //  · day sigue a Date.getDay(): 0 = domingo … 6 = sábado
@@ -109,7 +112,8 @@ export function weeklyMinutes(course) {
   return sortedSessions(course).reduce((acc, s) => acc + durationOf(s), 0)
 }
 
-// ¿El curso sigue vigente en esa fecha? Un curso sin fechas siempre lo está.
+// ¿Sigue vigente en esa fecha? Sin fechas, siempre lo está. Vale igual para
+// un curso y para un bloque libre: los dos usan startDate/endDate.
 export function isCourseActive(course, date = new Date()) {
   const d = new Date(date)
   if (Number.isNaN(d.getTime())) return true
@@ -125,12 +129,47 @@ export function isCourseActive(course, date = new Date()) {
   return true
 }
 
+
+// ------------------------------------------------------------
+//  Bloques libres: lo del horario que no es un curso
+// ------------------------------------------------------------
+//  Viven en state.blocks (no dentro de un curso) y se ven así:
+//    { id, name, color, day, start, end, mode, room, startDate, endDate }
+//  · día, horas y modalidad funcionan igual que en una sesión de curso
+//  · name y color son propios, porque no cuelgan de ningún curso
+//  · startDate/endDate son opcionales: sin ellas el bloque es permanente,
+//    con ellas se comporta como un curso con fechas (una práctica de tres
+//    meses desaparece sola al terminar)
+//  Los respaldos viejos no traen la lista; por eso todo lee `blocks ?? []`.
+
+export const DEFAULT_BLOCK = {
+  name: '', color: '#3b7ea1', day: 1, start: '08:00', end: '10:00',
+  mode: 'presencial', room: '', startDate: null, endDate: null,
+}
+export const MAX_BLOCK_NAME = 28
+
+// Nombres sugeridos, para llenar de un toque los casos más comunes.
+export const BLOCK_SUGGESTIONS = ['Trabajo', 'Prácticas', 'Asesoría', 'Estudio', 'Gimnasio']
+
+// Los bloques con día y horas válidas, ordenados como las sesiones.
+export function sortedBlocks(blocks = []) {
+  const list = (blocks ?? []).filter(
+    (b) => b && DAYS.some((d) => d.id === b.day) && minutesOf(b.start) != null && minutesOf(b.end) != null,
+  )
+  return list.slice().sort((a, b) => {
+    const da = WEEK_ORDER.indexOf(a.day)
+    const db = WEEK_ORDER.indexOf(b.day)
+    if (da !== db) return da - db
+    return minutesOf(a.start) - minutesOf(b.start)
+  })
+}
+
 // ------------------------------------------------------------
 //  La semana completa
 // ------------------------------------------------------------
 
 // Todas las sesiones de todos los cursos, con los datos del curso pegados.
-export function allSessions(courses = [], { onlyActive = false, date = new Date() } = {}) {
+export function allSessions(courses = [], { onlyActive = false, date = new Date(), blocks = [] } = {}) {
   const out = []
   for (const c of courses) {
     if (onlyActive && !isCourseActive(c, date)) continue
@@ -144,6 +183,21 @@ export function allSessions(courses = [], { onlyActive = false, date = new Date(
         endMin: minutesOf(s.end),
       })
     }
+  }
+  // Los bloques libres se mezclan aquí con las mismas llaves que una clase, así
+  // la rejilla, la lista y la próxima cita no tienen que saber de dónde sale
+  // cada uno. Lo que los distingue es courseId: null y blockId con su id.
+  for (const b of sortedBlocks(blocks)) {
+    if (onlyActive && !isCourseActive(b, date)) continue
+    out.push({
+      ...b,
+      blockId: b.id,
+      courseId: null,
+      courseName: b.name || 'Sin nombre',
+      courseColor: b.color || DEFAULT_BLOCK.color,
+      startMin: minutesOf(b.start),
+      endMin: minutesOf(b.end),
+    })
   }
   return out
 }
@@ -219,7 +273,7 @@ export const hasOverlap = (laidOut) => (laidOut?.lanes ?? 1) > 1
 // La clase que toca a partir de `now`, mirando los próximos 7 días.
 // Si hay una en curso, esa gana y viene con `ongoing: true`.
 // Devuelve null si no hay ninguna.
-export function nextClass(courses = [], now = new Date()) {
+export function nextClass(courses = [], now = new Date(), blocks = []) {
   const nowMin = now.getHours() * 60 + now.getMinutes()
   const today = now.getDay()
 
@@ -229,7 +283,7 @@ export function nextClass(courses = [], now = new Date()) {
     date.setDate(date.getDate() + offset)
     date.setHours(0, 0, 0, 0)
 
-    const list = allSessions(courses, { onlyActive: true, date })
+    const list = allSessions(courses, { onlyActive: true, date, blocks })
       .filter((s) => s.day === day)
       .sort((a, b) => a.startMin - b.startMin)
 

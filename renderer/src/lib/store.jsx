@@ -4,7 +4,7 @@
 import React, { createContext, useContext, useEffect, useReducer, useRef } from 'react'
 import { newId, emptyState } from './id.js'
 import { buildNotifications } from './schedule.js'
-import { DEFAULT_SESSION } from './classes.js'
+import { DEFAULT_SESSION, DEFAULT_BLOCK } from './classes.js'
 
 const StoreCtx = createContext(null)
 export const useStore = () => useContext(StoreCtx)
@@ -136,11 +136,35 @@ function reducer(state, action) {
         ),
       }
 
+    // ---- Bloques libres del horario (trabajo, prácticas…) ----
+    case 'ADD_BLOCK':
+      return {
+        ...state,
+        blocks: [...(state.blocks ?? []), { ...DEFAULT_BLOCK, ...(action.block || {}), id: newId() }],
+      }
+
+    case 'UPDATE_BLOCK':
+      return {
+        ...state,
+        blocks: (state.blocks ?? []).map((b) => (b.id === action.id ? { ...b, ...action.patch } : b)),
+      }
+
+    case 'DELETE_BLOCK':
+      return { ...state, blocks: (state.blocks ?? []).filter((b) => b.id !== action.id) }
+
     case 'UPDATE_SETTINGS':
       return { ...state, settings: { ...state.settings, ...action.patch } }
 
-    case 'REPLACE_ALL':
-      return { ...action.payload, loaded: true }
+    case 'REPLACE_ALL': {
+      const base = emptyState()
+      return {
+        ...base,
+        ...action.payload,
+        settings: { ...base.settings, ...action.payload.settings },
+        blocks: action.payload.blocks ?? [],
+        loaded: true,
+      }
+    }
 
     default:
       return state

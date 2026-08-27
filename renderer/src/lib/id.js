@@ -10,6 +10,8 @@ export const newId = () => `${Date.now().toString(36)}-${(_n++).toString(36)}`
 export function emptyState() {
   return {
     courses: [],
+    // Bloques de horario que no son de un curso: trabajo, prácticas, gimnasio…
+    blocks: [],
     settings: {
       defaultScale: { min: 0, max: 20, passing: 11, step: 1 },
       semesterWeeks: 16,

@@ -549,6 +549,27 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity: 1; }
 }
 .class-row { padding: 7px 0; border-bottom: 1px solid var(--slate50); }
 .class-row .select { width: 100%; }
+
+/* Tabla de "Otros bloques" (horario que no es de un curso). Mismo patrón que
+   la de clases, con dos columnas más: el color y la vigencia. */
+.block-head, .block-row {
+  display: grid;
+  grid-template-columns: 24px minmax(130px, 1.2fr) 104px 92px 92px 116px minmax(110px, 1fr) 116px 30px;
+  align-items: center; gap: 8px;
+  min-width: 878px;
+}
+.block-head {
+  padding: 0 0 8px; border-bottom: 1px solid var(--slate100);
+  font-size: 10px; font-weight: 700; color: var(--text-faint);
+  text-transform: uppercase; letter-spacing: 0.4px;
+}
+.block-row { padding: 7px 0; border-bottom: 1px solid var(--slate50); }
+.block-row .select { width: 100%; }
+.swatch.sm { width: 20px; height: 20px; border-width: 2px; }
+.btn.ghost.vigencia {
+  width: 100%; padding: 7px 8px; font-size: 11.5px; font-weight: 600;
+  color: var(--text-soft); overflow: hidden; text-overflow: ellipsis;
+}
 /* En la tabla, el segmentado ocupa toda su celda y los dos botones se
    reparten el ancho a medias, así que "Virtual" nunca se recorta. */
 .class-row .seg { display: flex; width: 100%; }
@@ -556,7 +577,7 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity: 1; }
 
 /* ---------- Impresión del horario (A4 apaisado) ---------- */
 /* En pantalla no se ven: son la cabecera y la leyenda de la hoja. */
-.tt-print-head, .tt-legend { display: none; }
+.tt-print-head, .tt-detalle { display: none; }
 
 @media print {
   @page { size: A4 landscape; margin: 10mm; }
@@ -593,16 +614,26 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity: 1; }
   .tt-dayhead.today { color: var(--text-soft); }
   .tt-now { display: none; }
 
-  .tt-block { break-inside: avoid; box-shadow: none; }
-  .tt-block-name { font-size: 10.5px; }
-  .tt-block-time { font-size: 9px; }
-  .tt-block-meta { font-size: 8.5px; }
+  /* En papel nada se recorta con puntos suspensivos: el nombre se parte en
+     varias líneas y el resto del dato va en una sola línea debajo. */
+  .tt-block { break-inside: avoid; box-shadow: none; padding: 2px 5px; gap: 0; }
+  .tt-block-name { font-size: 9px; line-height: 1.15; white-space: normal; overflow: visible; }
+  .tt-block-meta { font-size: 7.5px; line-height: 1.15; white-space: normal; overflow: visible; }
 
-  .tt-legend {
-    display: flex; flex-wrap: wrap; gap: 5px 16px;
-    margin-top: 9px; padding-top: 7px; border-top: 1px solid var(--border);
-    font-size: 10.5px; color: var(--text-soft);
+
+  /* Todas las clases con su dato completo, en tres columnas para que quepa.
+     Si la semana es muy cargada esto pasa a una segunda hoja, que es preferible
+     a perder el aula o la modalidad de una clase. */
+  .tt-detalle {
+    display: block; margin-top: 9px; padding-top: 7px;
+    border-top: 1px solid var(--border); color: var(--text-soft);
   }
-  .tt-legend span { display: inline-flex; align-items: center; gap: 5px; }
-  .tt-legend i { width: 9px; height: 9px; border-radius: 3px; }
+  .tt-detalle h2 {
+    margin: 0 0 4px; font-size: 9px; font-weight: 700; letter-spacing: 0.5px;
+    text-transform: uppercase; color: var(--text-faint);
+  }
+  .tt-detalle ul { margin: 0; padding: 0; list-style: none; columns: 3; column-gap: 18px; }
+  .tt-detalle li { break-inside: avoid; font-size: 9.5px; line-height: 1.5; }
+  .tt-detalle b { color: var(--text); }
+  .tt-detalle i { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 4px; }
 }
