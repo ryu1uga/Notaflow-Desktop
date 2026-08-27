@@ -4,6 +4,7 @@
 import React, { createContext, useContext, useEffect, useReducer, useRef } from 'react'
 import { newId, emptyState } from './id.js'
 import { buildNotifications } from './schedule.js'
+import { DEFAULT_SESSION } from './classes.js'
 
 const StoreCtx = createContext(null)
 export const useStore = () => useContext(StoreCtx)
@@ -49,6 +50,7 @@ function reducer(state, action) {
             endDate: null,
             roundFinal: null,
             evaluations: [],
+            sessions: [],
           },
         ],
       }
@@ -100,6 +102,37 @@ function reducer(state, action) {
         ...state,
         courses: state.courses.map((c) =>
           c.id === action.courseId ? { ...c, evaluations: action.evaluations } : c,
+        ),
+      }
+
+    // ---- Bloques de clase (horario semanal del curso) ----
+    case 'ADD_SESSION':
+      return {
+        ...state,
+        courses: state.courses.map((c) =>
+          c.id === action.courseId
+            ? { ...c, sessions: [...(c.sessions ?? []), { ...DEFAULT_SESSION, ...(action.session || {}), id: newId() }] }
+            : c,
+        ),
+      }
+
+    case 'UPDATE_SESSION':
+      return {
+        ...state,
+        courses: state.courses.map((c) =>
+          c.id === action.courseId
+            ? { ...c, sessions: (c.sessions ?? []).map((s) => (s.id === action.sessionId ? { ...s, ...action.patch } : s)) }
+            : c,
+        ),
+      }
+
+    case 'DELETE_SESSION':
+      return {
+        ...state,
+        courses: state.courses.map((c) =>
+          c.id === action.courseId
+            ? { ...c, sessions: (c.sessions ?? []).filter((s) => s.id !== action.sessionId) }
+            : c,
         ),
       }
 

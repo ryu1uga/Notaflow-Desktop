@@ -1,8 +1,8 @@
 // ---------------------------------------------------------------
 //  Tipos de evaluación de NotaFlow.
 //
-//  IMPORTANTE: esta lista está duplicada a propósito en la app
-//  móvil, en App-Gestion-Cursos/src/lib/evalTypes.js
+//  IMPORTANTE: esta lista está duplicada a propósito en la app de
+//  escritorio, en Notaflow-Desktop/renderer/src/lib/evalTypes.js
 //  Las dos apps intercambian el mismo JSON de respaldo, así que si
 //  cambias algo aquí, copia el archivo al otro repo.
 // ---------------------------------------------------------------

@@ -4,6 +4,7 @@ import { newId } from './lib/id.js'
 import CoursesScreen from './screens/CoursesScreen.jsx'
 import CourseDetailScreen from './screens/CourseDetailScreen.jsx'
 import ScheduleScreen from './screens/ScheduleScreen.jsx'
+import TimetableScreen from './screens/TimetableScreen.jsx'
 import SettingsScreen from './screens/SettingsScreen.jsx'
 import Onboarding from './components/Onboarding.jsx'
 import { Icon, Toast } from './components/ui.jsx'
@@ -12,6 +13,7 @@ import { colors } from './theme.js'
 const TABS = [
   { id: 'cursos', label: 'Cursos', icon: 'book-open' },
   { id: 'cronograma', label: 'Cronograma', icon: 'calendar' },
+  { id: 'horario', label: 'Horario', icon: 'clock' },
   { id: 'config', label: 'Ajustes', icon: 'sliders' },
 ]
 
@@ -94,6 +96,7 @@ function Shell() {
         {tab === 'cursos' && !course && <CoursesScreen onOpen={setOpenCourse} onCreate={createCourse} />}
         {tab === 'cursos' && course && <CourseDetailScreen course={course} onBack={closeCourse} />}
         {tab === 'cronograma' && <ScheduleScreen onOpen={(id) => { setTab('cursos'); setOpenCourse(id) }} />}
+        {tab === 'horario' && <TimetableScreen onOpen={(id) => { setTab('cursos'); setOpenCourse(id) }} />}
         {tab === 'config' && <SettingsScreen notify={setToast} />}
       </main>
 

@@ -83,8 +83,9 @@ Para empaquetar sin crear instalador (útil para probar): `npm run pack`.
 
 ## Qué hace
 
-**Cursos.** Cada curso tiene evaluaciones con nombre, tipo (Examen, Proyecto, Práctica…),
-fecha, semana, peso (%) y nota. Ingresas las notas conforme te las devuelven.
+**Cursos.** Cada curso tiene evaluaciones con nombre, tipo (Examen, Proyecto, Práctica…
+o el que escribas tú), fecha, semana, peso (%) y nota. Ingresas las notas conforme te las
+devuelven.
 
 **Control de notas ponderadas** (peso × nota):
 
@@ -93,6 +94,11 @@ fecha, semana, peso (%) y nota. Ingresas las notas conforme te las devuelven.
 - **Máx./Mín. posible** según lo que saques en lo pendiente.
 - **Para aprobar**: cuánto necesitas en promedio en lo que falta.
 - **Próxima evaluación**: nota mínima que necesitas en la siguiente para seguir en carrera.
+
+**Horario de clases.** En cada curso registras en qué días te toca, de qué hora a qué hora,
+si es **presencial o virtual**, qué bloque es (Teoría, Laboratorio…) y el aula. La pestaña
+**Horario** junta las clases de todos tus cursos en una rejilla semanal, con la hora actual
+marcada y tu próxima clase arriba. Los bloques con borde punteado son las clases virtuales.
 
 **Cronograma.** Todas las evaluaciones de todos los cursos, por semana del semestre
 o en vista de calendario mensual.
@@ -108,9 +114,10 @@ propia puede tener su propio switch de redondeo, que anula el global.
 desde el inicio + su número de semana, o la fijas directamente y se deduce la semana.
 
 **Notificaciones del sistema.** Actívalas en Ajustes y la app avisa X días antes (por defecto 2)
-de cada evaluación pendiente con fecha. El aviso llega a más tardar el domingo previo a la semana
-de la evaluación; los "días antes" solo pueden adelantarlo. Se disparan mientras NotaFlow esté
-abierto (incluso minimizado).
+de cada evaluación pendiente con fecha, a la hora que elijas. El aviso llega a más tardar el
+domingo previo a la semana de la evaluación; los "días antes" solo pueden adelantarlo. Se
+disparan mientras NotaFlow esté abierto (incluso minimizado), y el botón **Probar aviso**
+te deja confirmar que tu sistema los muestra.
 
 **Reordenar evaluaciones.** Arrastra el asa (≡) de una fila.
 
@@ -150,9 +157,11 @@ renderer/
     styles.css       Todos los estilos
     lib/
       calc.js        Lógica de notas (pura) — idéntica a la del móvil
+      classes.js     Horario: días, modalidad, rejilla semanal — idéntica a la del móvil
+      evalTypes.js   Tipos de evaluación — idéntica a la del móvil
+      id.js          Generador de IDs y estado inicial vacío — idéntica a la del móvil
       schedule.js    Fechas de evaluaciones y armado de avisos
       store.jsx      Estado global + persistencia + export/import
-      id.js          Generador de IDs y estado inicial vacío
     components/
       Icon.jsx       Íconos Feather en línea
       ui.jsx         Card, Badge, Progress, NumField, Switch, Modal, DateField…
@@ -162,10 +171,31 @@ renderer/
       CoursesScreen.jsx
       CourseDetailScreen.jsx
       ScheduleScreen.jsx
+      TimetableScreen.jsx
       SettingsScreen.jsx
 build/
   icon.png / icon.ico / icon.icns    Íconos del ejecutable e instalador
 ```
+
+## Las dos apps
+
+NotaFlow existe también para el celular, en [Notaflow-App](../Notaflow-App)
+(React Native + Expo). Las dos guardan y leen el **mismo JSON de respaldo**, así que
+puedes exportar de una e importar en la otra.
+
+Para que eso siga funcionando, estos archivos son **idénticos en los dos repos** y se
+copian a mano cuando cambian:
+
+| Aquí | En el móvil |
+| --- | --- |
+| `renderer/src/lib/calc.js` | `src/lib/calc.js` |
+| `renderer/src/lib/classes.js` | `src/lib/classes.js` |
+| `renderer/src/lib/evalTypes.js` | `src/lib/evalTypes.js` |
+| `renderer/src/lib/id.js` | `src/lib/id.js` |
+| `renderer/src/theme.js` | `src/theme.js` |
+
+Los campos nuevos se leen siempre con valor por defecto (`course.sessions ?? []`), así que
+un respaldo hecho con una versión anterior se abre sin migrar nada.
 
 ## Seguridad
 

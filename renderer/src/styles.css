@@ -148,14 +148,14 @@ button { cursor: pointer; }
 .field { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
 .field-label { font-size: 11.5px; color: var(--text-soft); display: flex; align-items: center; gap: 4px; }
 
-input.num, input.text, input.date-input, .select select {
+input.num, input.text, input.date-input, input.time-input, .select select {
   width: 100%; background: var(--card);
   border: 1px solid var(--border); border-radius: 9px;
   padding: 8px 10px; color: var(--text); outline: none;
   transition: border-color 0.12s, box-shadow 0.12s;
 }
 input.num { text-align: center; }
-input.num:focus, input.text:focus, input.date-input:focus, .select select:focus {
+input.num:focus, input.text:focus, input.date-input:focus, input.time-input:focus, .select select:focus {
   border-color: var(--brand);
   box-shadow: 0 0 0 3px rgba(109, 74, 156, 0.13);
 }
@@ -412,9 +412,86 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity: 1; }
 
 @media (max-width: 900px) {
   .grid2, .grid3 { grid-template-columns: 1fr; }
+  .class-head { display: none; }
+  .class-row { grid-template-columns: 1fr 1fr; row-gap: 6px; }
   .sidebar { width: 76px; padding: 18px 10px 12px; }
   .brand p, .nav button span, .sidebar-foot { display: none; }
   .brand h1 { font-size: 15px; text-align: center; }
   .nav button { justify-content: center; }
   .page { padding: 22px 18px 48px; }
 }
+
+/* ---------- Horario de clases ---------- */
+.card.next-class { border-left: 4px solid var(--brand); }
+.link-strong {
+  background: none; border: 0; padding: 0;
+  font-size: 15px; font-weight: 700; color: var(--text); cursor: pointer;
+}
+.link-strong:hover { color: var(--brand); text-decoration: underline; }
+.tt-tag {
+  font-size: 10.5px; font-weight: 700; letter-spacing: 0.3px;
+  color: var(--text-soft); background: var(--slate100);
+  border-radius: 999px; padding: 3px 9px;
+}
+
+.tt { --tt-gutter: 58px; overflow-x: auto; }
+.tt-head, .tt-body {
+  display: grid;
+  grid-template-columns: var(--tt-gutter) repeat(var(--tt-cols), minmax(104px, 1fr));
+}
+.tt-dayhead {
+  padding: 6px 6px 9px; text-align: center;
+  font-size: 12.5px; font-weight: 700; color: var(--text-soft);
+  border-bottom: 1px solid var(--border);
+}
+.tt-dayhead.today { color: var(--brand); }
+.tt-body { position: relative; padding-top: 10px; }
+.tt-gutter { position: relative; }
+.tt-hour {
+  position: absolute; right: 9px; transform: translateY(-50%);
+  font-size: 11px; color: var(--text-faint);
+}
+.tt-col { position: relative; border-left: 1px solid var(--slate100); }
+.tt-col.today { background: var(--slate50); }
+.tt-line { position: absolute; left: 0; right: 0; height: 1px; background: var(--slate100); }
+.tt-now { position: absolute; left: 0; right: 0; height: 2px; background: var(--red); z-index: 3; }
+.tt-now::before {
+  content: ''; position: absolute; left: -3px; top: -3px;
+  width: 8px; height: 8px; border-radius: 50%; background: var(--red);
+}
+
+.tt-block {
+  position: absolute; z-index: 1;
+  display: flex; flex-direction: column; gap: 1px;
+  padding: 5px 8px; margin-left: 3px; overflow: hidden; text-align: left;
+  border: 1px solid; border-left-width: 3px; border-radius: 9px; cursor: pointer;
+  transition: box-shadow 0.12s, filter 0.12s;
+}
+.tt-block:hover { filter: brightness(0.97); box-shadow: var(--shadow); }
+/* Borde punteado = clase virtual */
+.tt-block.virtual { border-style: dashed; border-left-style: solid; }
+.tt-block-name {
+  font-size: 12.5px; font-weight: 700; line-height: 1.2;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.tt-block-time { font-size: 11px; color: var(--text-soft); }
+.tt-block-meta {
+  font-size: 10.5px; color: var(--text-faint);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.tt-block.compact { flex-direction: row; align-items: center; gap: 7px; padding: 2px 8px; }
+
+/* Tarjeta "Clases" del detalle del curso */
+.class-table { width: 100%; margin-top: 4px; }
+.class-head, .class-row {
+  display: grid;
+  grid-template-columns: 128px 104px 104px 132px minmax(120px, 1fr) 132px 30px;
+  align-items: center; gap: 8px;
+}
+.class-head {
+  padding: 0 0 8px; border-bottom: 1px solid var(--slate100);
+  font-size: 10px; font-weight: 700; color: var(--text-faint);
+  text-transform: uppercase; letter-spacing: 0.4px;
+}
+.class-row { padding: 7px 0; border-bottom: 1px solid var(--slate50); }
+.class-row .select { width: 100%; }

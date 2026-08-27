@@ -1,6 +1,11 @@
 // ============================================================
 //  Lógica de cálculo de notas ponderadas
-//  Portada tal cual desde la app móvil: todo es puro (sin estado).
+//  Todo es puro (sin estado) para poder testearlo fácilmente.
+//
+//  IMPORTANTE: este archivo es idéntico en las dos apps
+//    Notaflow-App/src/lib/calc.js
+//    Notaflow-Desktop/renderer/src/lib/calc.js
+//  Si cambias algo aquí, copia el archivo al otro repo.
 // ============================================================
 
 // Redondea a un paso dado (ej. step=1 -> enteros, step=0.1 -> 1 decimal)
@@ -45,7 +50,7 @@ export function effectiveScale(course, settings) {
 
 // Devuelve si se debe redondear la nota final para este curso.
 // Si el curso usa escala propia y definió su propio roundFinal, gana ese;
-// si no, se usa el ajuste global (por defecto true).
+// si no, se usa el ajuste global (roundFinal !== false por defecto true).
 export function effectiveRound(course, settings) {
   if (course?.useOwnScale && course?.roundFinal != null) {
     return course.roundFinal !== false
@@ -58,6 +63,9 @@ export function effectiveRound(course, settings) {
 // ------------------------------------------------------------
 // evaluations: [{ id, name, type, week, weight (0..1 o %), grade (número|null) }]
 // scale: { min, max, passing, step }
+//
+// Nota: weight se interpreta como el peso relativo. Si los pesos
+// suman 1 (o 100), se usan tal cual (normalizados a fracción).
 export function analyzeCourse(evaluations = [], scale = DEFAULT_SCALE, opts = {}) {
   // round: redondear la nota final al paso de la escala (ej. 10.65 -> 11)
   const round = opts.round !== false
@@ -92,18 +100,20 @@ export function analyzeCourse(evaluations = [], scale = DEFAULT_SCALE, opts = {}
   const clampScale = (v) => Math.min(scale.max, Math.max(scale.min, v))
 
   // Valores crudos (sin redondear ni recortar) para comparaciones internas.
+  // Todo expresado como NOTA FINAL en la escala (dividido por el peso total).
   const currentAvgRaw = gradedWeight > 0 ? earned / gradedWeight : null
   const rawMax = (earned + pendingWeight * scale.max) / tw
   const rawMin = (earned + pendingWeight * scale.min) / tw
   const projRaw = earned / tw
 
   // ¿Cuánto necesito (en promedio) en lo pendiente para aprobar?
+  // (earned + pendingWeight * x) / tw  >= passThreshold
   let neededAvgOnPending = null
   if (pendingWeight > 0) {
     neededAvgOnPending = (passThreshold * tw - earned) / pendingWeight
   }
 
-  // Estado global del curso
+  // Estado global del curso (comparando la nota final normalizada vs. el umbral)
   let status
   if (pendingWeight <= 1e-9) {
     status = projRaw >= passThreshold - 1e-9 ? 'aprobado' : 'desaprobado'
@@ -129,11 +139,13 @@ export function analyzeCourse(evaluations = [], scale = DEFAULT_SCALE, opts = {}
     pendingWeight,
     totalWeightFrac: totalWeight,
     earned,
+    // Valores para mostrar (recortados a la escala y redondeados si corresponde)
     currentAvg: finalize(currentAvgRaw),
     maxPossible: finalize(clampScale(rawMax)),
     minPossible: finalize(clampScale(rawMin)),
     neededAvgOnPending,
     projectedIfStopNow: finalize(clampScale(projRaw)),
+    // Crudos por si se necesitan
     currentAvgRaw,
     status,
   }
@@ -142,6 +154,7 @@ export function analyzeCourse(evaluations = [], scale = DEFAULT_SCALE, opts = {}
 // ------------------------------------------------------------
 //  ¿Qué nota necesito en la PRÓXIMA evaluación (una específica)?
 //  Asume el mejor caso en las demás pendientes (sacar el máximo).
+//  Devuelve la nota mínima necesaria en esa evaluación.
 // ------------------------------------------------------------
 export function neededOnNext(analysis, nextEval, scale) {
   const { earned, pendingWeight } = analysis
@@ -151,21 +164,25 @@ export function neededOnNext(analysis, nextEval, scale) {
   if (wNext <= 0) return null
 
   const otherPendingWeight = pendingWeight - wNext
+  // (earned + otherPending*max + wNext*x) / tw >= passThreshold
   const pass = analysis.passThreshold ?? scale.passing
   const required = (pass * tw - earned - otherPendingWeight * scale.max) / wNext
 
   return {
     weight: wNext,
+    // valor crudo (puede salir <min o >max)
     raw: required,
+    // interpretado:
     feasible: required <= scale.max + 1e-9,
+    // si sale por debajo del mínimo, con cualquier nota apruebas (asumiendo max en el resto)
     triviallyOk: required <= scale.min + 1e-9,
     clamped: Math.min(scale.max, Math.max(scale.min, required)),
   }
 }
 
 export const STATUS_META = {
-  aprobado:    { label: 'Aprobado',           color: 'emerald', hint: 'Curso cerrado, aprobaste.' },
-  desaprobado: { label: 'Desaprobado',        color: 'red',     hint: 'Curso cerrado sin la mínima.' },
+  aprobado:    { label: 'Aprobado',        color: 'emerald', hint: 'Curso cerrado, aprobaste.' },
+  desaprobado: { label: 'Desaprobado',     color: 'red',     hint: 'Curso cerrado sin la mínima.' },
   seguro:      { label: 'Aprobado asegurado', color: 'emerald', hint: 'Ya alcanzaste la nota mínima para aprobar.' },
   en_juego:    { label: 'Aún es posible',     color: 'amber',   hint: 'Depende de tus próximas notas.' },
   imposible:   { label: 'Ya no es posible',   color: 'red',     hint: 'Aunque obtengas la nota máxima restante, no alcanzarás a aprobar.' },

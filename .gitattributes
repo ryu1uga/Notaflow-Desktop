@@ -1,0 +1,10 @@
+# Normaliza los saltos de línea: el repo guarda LF, tu copia de trabajo
+# se queda como esté. Sin esto, editar en Windows marca archivos enteros
+# como modificados solo por el CRLF.
+* text=auto
+
+*.png binary
+*.ico binary
+*.icns binary
+*.jpg binary
+*.jpeg binary
