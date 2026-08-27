@@ -2,6 +2,7 @@
 import React, { useEffect, useState, useRef } from 'react'
 import Icon from './Icon.jsx'
 import { colors, statusColor } from '../theme.js'
+import { minutesOf, fmtTime } from '../lib/classes.js'
 
 export { default as Icon } from './Icon.jsx'
 
@@ -77,6 +78,61 @@ export function NumField({
       onKeyDown={(e) => {
         if (e.key === 'Enter') { commit(); e.target.blur(); onNext?.() }
         if (e.key === 'Escape') { setFocused(false); e.target.blur() }
+      }}
+    />
+  )
+}
+
+// Campo de hora en 24 h. Igual que NumField, guarda el texto crudo mientras
+// escribes y solo entrega un valor al salir: así las correcciones (conservar
+// la duración, avisar de un fin anterior al inicio) corren una vez y no tecla
+// por tecla. Nada de <input type="time">: ese entrega '' a medio escribir y
+// se pinta en 12 h o 24 h según la locale del sistema.
+export function TimeField({ value, onCommit, label, invalid = false }) {
+  const [focused, setFocused] = useState(false)
+  const [text, setText] = useState('')
+
+  // "8" → 08:00 · "830" o "8:3" → 08:30 · "0830" → 08:30 · "8.30" → 08:30
+  const parse = (raw) => {
+    const d = String(raw).replace(/\D/g, '')
+    if (!d) return null
+    const H = Number(d.length <= 2 ? d : d.slice(0, d.length - 2))
+    const M = Number(d.length <= 2 ? 0 : d.slice(-2))
+    if (H > 23 || M > 59) return null
+    return fmtTime(H * 60 + M)
+  }
+
+  const commit = () => {
+    setFocused(false)
+    const v = parse(text)
+    if (v && v !== value) onCommit(v)   // inválido: se descarta y vuelve el anterior
+  }
+
+  // ↑/↓ mueven de 5 en 5 minutos; con Shift, de 30 en 30.
+  const nudge = (delta) => {
+    const base = minutesOf(parse(text) || value || '')
+    if (base == null) return
+    const v = fmtTime(base + delta)
+    setText(v)
+    onCommit(v)
+  }
+
+  return (
+    <input
+      className={`time-input ${invalid ? 'invalid' : ''}`}
+      aria-label={label}
+      inputMode="numeric"
+      maxLength={5}
+      placeholder="--:--"
+      value={focused ? text : (value || '')}
+      onFocus={(e) => { setFocused(true); setText(value || ''); e.target.select() }}
+      onChange={(e) => setText(e.target.value.replace(/[^\d:.]/g, ''))}
+      onBlur={commit}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') { commit(); e.target.blur() }
+        if (e.key === 'Escape') { setText(value || ''); e.target.blur() }
+        if (e.key === 'ArrowUp') { e.preventDefault(); nudge(e.shiftKey ? 30 : 5) }
+        if (e.key === 'ArrowDown') { e.preventDefault(); nudge(e.shiftKey ? -30 : -5) }
       }}
     />
   )

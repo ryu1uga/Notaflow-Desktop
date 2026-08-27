@@ -68,7 +68,7 @@ export default function TimetableScreen({ onOpen }) {
   const vacío = sessions.length === 0
 
   return (
-    <div className="page">
+    <div className="page wide">
       <div className="page-head">
         <div>
           <h2>Horario</h2>

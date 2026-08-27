@@ -6,7 +6,7 @@ import {
 } from '../lib/calc.js'
 import { evalEffectiveDate, weekFromDate, notifyFireAt } from '../lib/schedule.js'
 import {
-  Card, Badge, Progress, Icon, NumField, Switch, TypeField,
+  Card, Badge, Progress, Icon, NumField, Switch, TypeField, TimeField,
   InfoButton, DateField, Confirm,
 } from '../components/ui.jsx'
 import { colors, palette, statusColor } from '../theme.js'
@@ -60,6 +60,13 @@ export default function CourseDetailScreen({ course, onBack }) {
   })
   const semanales = weeklyMinutes(course)
   const horasIncompletas = sessions.some((s) => minutesOf(s.start) == null || minutesOf(s.end) == null)
+  // ¿Esta clase termina antes de empezar?
+  const rangoMalo = (s) => {
+    const a = minutesOf(s.start)
+    const b = minutesOf(s.end)
+    return a != null && b != null && b <= a
+  }
+  const hayRangoMalo = sessions.some(rangoMalo)
 
   // Al mover la hora de inicio, la clase conserva su duración.
   const setStart = (s, v) => {
@@ -70,13 +77,9 @@ export default function CourseDetailScreen({ course, onBack }) {
     patchSession(s.id, { start: v, end: fmtTime(nuevo + (fin - antes)) })
   }
 
-  // La hora de fin nunca puede quedar antes del inicio.
-  const setEnd = (s, v) => {
-    const ini = minutesOf(s.start)
-    const nuevo = minutesOf(v)
-    if (nuevo != null && ini != null && nuevo <= ini) return patchSession(s.id, { end: fmtTime(ini + 30) })
-    patchSession(s.id, { end: v })
-  }
+  // La hora de fin se guarda tal cual. Si queda antes del inicio se marca la
+  // fila y se avisa debajo de la tabla, en vez de reescribirla por el usuario.
+  const setEnd = (s, v) => patchSession(s.id, { end: v })
 
   // Fija el día exacto de una evaluación y, si hay fecha de inicio, deriva la semana.
   const setEvalDate = (evalId, iso) => {
@@ -362,11 +365,11 @@ export default function CourseDetailScreen({ course, onBack }) {
                   <Icon name="chevron-down" size={13} color={colors.textSoft} />
                 </div>
 
-                <input type="time" className="time-input" aria-label="Hora de inicio"
-                  value={s.start || ''} onChange={(ev) => setStart(s, ev.target.value)} />
+                <TimeField value={s.start} label="Hora de inicio"
+                  onCommit={(v) => setStart(s, v)} />
 
-                <input type="time" className="time-input" aria-label="Hora de fin"
-                  value={s.end || ''} onChange={(ev) => setEnd(s, ev.target.value)} />
+                <TimeField value={s.end} label="Hora de fin" invalid={rangoMalo(s)}
+                  onCommit={(v) => setEnd(s, v)} />
 
                 <div className="seg">
                   {MODES.map((m) => (
@@ -406,6 +409,12 @@ export default function CourseDetailScreen({ course, onBack }) {
         {horasIncompletas && (
           <p className="hint" style={{ color: colors.amber }}>
             Hay una clase sin hora completa: esa no sale en el horario hasta que la llenes.
+          </p>
+        )}
+
+        {hayRangoMalo && (
+          <p className="hint" style={{ color: colors.amber }}>
+            Hay una clase que termina antes de empezar: revisa su hora de fin.
           </p>
         )}
 

@@ -6,10 +6,11 @@
 //   · diálogos de exportar / importar
 //   · notificaciones nativas del sistema
 // ============================================================
-import { app, BrowserWindow, ipcMain, dialog, shell, Notification, Menu } from 'electron'
+import { app, BrowserWindow, ipcMain, dialog, shell, Notification, Menu, screen } from 'electron'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import fs from 'node:fs/promises'
+import { readFileSync, writeFileSync } from 'node:fs'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 // Solo se apunta al servidor de Vite cuando se arranca con `npm run dev`,
@@ -21,18 +22,69 @@ const isDev = !isPacked && process.env.NODE_ENV === 'development'
 // --- Rutas de datos -----------------------------------------
 const dataFile = () => path.join(app.getPath('userData'), 'notaflow-data.json')
 const firedFile = () => path.join(app.getPath('userData'), 'notaflow-fired.json')
+const windowFile = () => path.join(app.getPath('userData'), 'notaflow-window.json')
 
 let win = null
 
 // ------------------------------------------------------------
-//  Ventana
+//  Ventana: tamaño y posición
+//  Se guardan en su propio JSON (no en los datos del usuario) para que
+//  al reabrir la app quede como el usuario la dejó. La primera vez, sin
+//  archivo que leer, arranca maximizada.
 // ------------------------------------------------------------
+function readWindowState() {
+  try {
+    const s = JSON.parse(readFileSync(windowFile(), 'utf8'))
+    if (!Number.isFinite(s.width) || !Number.isFinite(s.height)) return null
+    return s
+  } catch {
+    return null   // primera vez, archivo corrupto o sin permisos: valores por defecto
+  }
+}
+
+// ¿La posición guardada sigue cayendo dentro de algún monitor conectado?
+// Si se desenchufó la pantalla donde estaba, se ignora y vuelve al centro.
+function enPantalla(b) {
+  if (!Number.isFinite(b.x) || !Number.isFinite(b.y)) return false
+  return screen.getAllDisplays().some(({ workArea: a }) => (
+    b.x < a.x + a.width && b.x + b.width > a.x &&
+    b.y < a.y + a.height && b.y + b.height > a.y
+  ))
+}
+
+let guardarTimer = null
+
+function saveWindowState() {
+  if (!win || win.isDestroyed()) return
+  // getNormalBounds da el tamaño "restaurado", no el de la pantalla completa,
+  // que es justo lo que hay que recordar para cuando desmaximice.
+  const b = win.getNormalBounds()
+  try {
+    writeFileSync(windowFile(), JSON.stringify({ ...b, maximized: win.isMaximized() }))
+  } catch {
+    /* si no se puede escribir, la app sigue igual: solo no recuerda el tamaño */
+  }
+}
+
+// Al arrastrar el borde llegan decenas de eventos: se guarda al parar.
+const guardarLuego = () => {
+  clearTimeout(guardarTimer)
+  guardarTimer = setTimeout(saveWindowState, 400)
+}
+
 function createWindow() {
+  const guardado = readWindowState()
+  const recuperable = guardado != null && enPantalla(guardado)
+
+  // Tamaño de respaldo cuando no hay nada guardado: nunca mayor que la pantalla.
+  const { width: sw, height: sh } = screen.getPrimaryDisplay().workAreaSize
+
   win = new BrowserWindow({
-    width: 1180,
-    height: 820,
-    minWidth: 900,
-    minHeight: 640,
+    width: recuperable ? guardado.width : Math.max(680, Math.min(1180, sw - 60)),
+    height: recuperable ? guardado.height : Math.max(520, Math.min(820, sh - 60)),
+    ...(recuperable ? { x: guardado.x, y: guardado.y } : {}),
+    minWidth: 680,
+    minHeight: 520,
     show: false,
     backgroundColor: '#f4f0e9',
     title: 'NotaFlow',
@@ -46,7 +98,13 @@ function createWindow() {
     },
   })
 
+  // Sin estado guardado se abre maximizada; con él manda lo que dejó el usuario.
+  if (!guardado || guardado.maximized) win.maximize()
+
   win.once('ready-to-show', () => win.show())
+
+  for (const ev of ['resize', 'move', 'maximize', 'unmaximize']) win.on(ev, guardarLuego)
+  win.on('close', saveWindowState)
 
   if (isDev) {
     win.loadURL('http://localhost:5173')

@@ -3,7 +3,7 @@ import {
   useStore, exportJSON, importJSON, revealFile,
   testNotification, notificationsSupported,
 } from '../lib/store.jsx'
-import { Card, NumField, Switch, Icon, InfoButton, Confirm } from '../components/ui.jsx'
+import { Card, NumField, Switch, Icon, InfoButton, Confirm, TimeField } from '../components/ui.jsx'
 import { colors } from '../theme.js'
 
 const two = (n) => String(n).padStart(2, '0')
@@ -121,13 +121,12 @@ export default function SettingsScreen({ notify }) {
                 onChange={(v) => dispatch({ type: 'UPDATE_SETTINGS', patch: { notifyDaysBefore: Math.max(0, Math.trunc(v)) } })} />
               <div className="field" style={{ width: 132 }}>
                 <div className="field-label">Hora del aviso</div>
-                <input
-                  type="time"
-                  className="date-input"
+                <TimeField
                   value={time}
-                  onChange={(e) => {
-                    const [h, m] = e.target.value.split(':').map(Number)
-                    if (!Number.isNaN(h)) dispatch({ type: 'UPDATE_SETTINGS', patch: { notifyHour: h, notifyMinute: m || 0 } })
+                  label="Hora del aviso"
+                  onCommit={(v) => {
+                    const [h, m] = v.split(':').map(Number)
+                    dispatch({ type: 'UPDATE_SETTINGS', patch: { notifyHour: h, notifyMinute: m || 0 } })
                   }}
                 />
               </div>

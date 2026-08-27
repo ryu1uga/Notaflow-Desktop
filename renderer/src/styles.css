@@ -83,11 +83,14 @@ button { cursor: pointer; }
 }
 
 .main { flex: 1; min-width: 0; overflow-y: auto; }
-.page { max-width: 1080px; margin: 0 auto; padding: 28px 32px 56px; }
+/* Ancho de lectura para las pantallas con texto y formularios. Las que son
+   una rejilla (cursos, horario) llevan además .wide y usan todo el monitor. */
+.page { max-width: 1320px; margin: 0 auto; padding: clamp(16px, 2.5vw, 28px) clamp(14px, 3vw, 32px) 56px; }
+.page.wide { max-width: none; }
 
 .page-head {
   display: flex; align-items: center; justify-content: space-between;
-  gap: 16px; margin-bottom: 18px;
+  flex-wrap: wrap; gap: 16px; margin-bottom: 18px;
 }
 .page-head h2 { margin: 0; font-size: 20px; font-weight: 800; }
 .page-head .sub { font-size: 13px; color: var(--text-soft); margin-top: 2px; }
@@ -111,7 +114,8 @@ button { cursor: pointer; }
 .p { font-size: 13px; color: var(--text-soft); line-height: 1.55; margin: 0 0 10px; }
 .empty { color: var(--text-soft); text-align: center; padding: 22px 8px; margin: 0; }
 
-.row { display: flex; align-items: center; gap: 10px; }
+/* Las filas se parten en varias líneas antes que desbordar la tarjeta. */
+.row { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
 .row.between { justify-content: space-between; }
 .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
@@ -154,7 +158,8 @@ input.num, input.text, input.date-input, input.time-input, .select select {
   padding: 8px 10px; color: var(--text); outline: none;
   transition: border-color 0.12s, box-shadow 0.12s;
 }
-input.num { text-align: center; }
+input.num, input.time-input { text-align: center; }
+input.time-input.invalid { border-color: var(--amber); color: var(--amber); }
 input.num:focus, input.text:focus, input.date-input:focus, input.time-input:focus, .select select:focus {
   border-color: var(--brand);
   box-shadow: 0 0 0 3px rgba(109, 74, 156, 0.13);
@@ -214,7 +219,32 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity: 1; }
 }
 
 /* ---------- Lista de cursos ---------- */
-.course-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; }
+/* Flex y no grid, a propósito: con una rejilla, las columnas vacías de la
+   última fila se quedan reservadas y las tarjetas se apelmazan a la izquierda.
+   Aquí las filas completas se reparten el ancho (hasta 520 px por tarjeta) y
+   la fila incompleta —o un curso solo— queda centrada. */
+.course-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: clamp(14px, 1vw, 20px);
+}
+.course-card { flex: 1 1 clamp(300px, 26vw, 420px); max-width: 520px; min-width: 0; }
+
+/* Y el contenido de la tarjeta acompaña: en una pantalla grande no tiene
+   sentido que la nota y el nombre midan lo mismo que en un portátil. */
+.course-card { padding: clamp(18px, 1.5vw, 28px); border-radius: clamp(16px, 1.2vw, 22px); }
+.course-card .course-head { margin-bottom: clamp(12px, 1vw, 18px); }
+.course-card .course-name { font-size: clamp(15px, 1.15vw, 19px); }
+.course-card .dot { width: clamp(11px, 0.8vw, 14px); height: clamp(11px, 0.8vw, 14px); }
+.course-card .grade-row { margin-bottom: clamp(7px, 0.6vw, 11px); }
+.course-card .grade-label { font-size: clamp(12.5px, 0.95vw, 15px); }
+.course-card .grade-val { font-size: clamp(22px, 2.1vw, 38px); }
+.course-card .grade-max { font-size: clamp(12px, 0.9vw, 16px); }
+.course-card .progress-track,
+.course-card .progress-fill { height: clamp(10px, 0.7vw, 14px); }
+.course-card .progress-mark { height: clamp(14px, 1vw, 19px); }
+.course-card .meta-row { font-size: clamp(12px, 0.9vw, 14.5px); margin-top: clamp(10px, 0.8vw, 15px); }
 .course-card { cursor: pointer; transition: transform 0.12s, box-shadow 0.12s, border-color 0.12s; }
 .course-card:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(51,45,42,0.10); border-color: #dccfba; }
 .course-card + .course-card { margin-top: 0; }
@@ -250,8 +280,8 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity: 1; }
 .big-grade { font-size: 36px; font-weight: 800; margin: 8px 0 10px; line-height: 1; }
 .big-grade small { font-size: 15px; font-weight: 400; color: var(--text-faint); }
 
-.mini-row { display: flex; gap: 10px; margin-top: 14px; }
-.mini-box { flex: 1; background: var(--slate50); border-radius: 10px; padding: 9px 11px; }
+.mini-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+.mini-box { flex: 1; min-width: 120px; background: var(--slate50); border-radius: 10px; padding: 9px 11px; }
 .mini-box .l { font-size: 11px; color: var(--text-faint); }
 .mini-box .v { font-size: 15px; font-weight: 700; }
 
@@ -264,11 +294,14 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity: 1; }
 }
 
 /* Tabla de evaluaciones */
-.eval-table { width: 100%; margin-top: 4px; }
+.eval-table { width: 100%; margin-top: 4px; overflow-x: auto; }
 .eval-head, .eval-row {
   display: grid;
   grid-template-columns: 26px minmax(160px, 1fr) 150px 150px 70px 80px 84px 30px;
   align-items: center; gap: 8px;
+  /* Suma de las 8 columnas más los espacios. Con la ventana angosta la tabla
+     se desplaza en horizontal en vez de recortar la nota y el botón. */
+  min-width: 806px;
 }
 .eval-head {
   padding: 0 0 8px; border-bottom: 1px solid var(--slate100);
@@ -355,13 +388,15 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity: 1; }
 
 /* ---------- Modales y avisos ---------- */
 .backdrop {
+  --pad: clamp(14px, 4vw, 32px);
   position: fixed; inset: 0; background: rgba(51, 45, 42, 0.42);
-  display: flex; align-items: center; justify-content: center; padding: 32px; z-index: 100;
+  display: flex; align-items: center; justify-content: center; padding: var(--pad); z-index: 100;
   animation: fade 0.12s ease;
 }
 .sheet {
   width: 100%; background: var(--card); border-radius: var(--radius);
   padding: 20px; box-shadow: 0 18px 48px rgba(0,0,0,0.25);
+  max-height: calc(100vh - 2 * var(--pad)); overflow-y: auto;
   animation: pop 0.14s ease;
 }
 .sheet-title { font-size: 16px; font-weight: 800; margin-bottom: 10px; }
@@ -377,7 +412,7 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity: 1; }
   display: flex; align-items: center; gap: 12px; z-index: 200;
   background: var(--card); border: 1px solid var(--border); border-radius: 12px;
   padding: 11px 12px 11px 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.16);
-  font-size: 13px; max-width: 560px; animation: pop 0.16s ease;
+  font-size: 13px; max-width: min(560px, calc(100vw - 32px)); animation: pop 0.16s ease;
 }
 .toast.error { border-color: var(--red); color: var(--red); }
 .toast.ok { border-color: var(--emerald); }
@@ -385,7 +420,8 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity: 1; }
 /* ---------- Tutorial ---------- */
 .onb {
   position: fixed; inset: 0; background: var(--bg); z-index: 300;
-  display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: clamp(20px, 5vw, 40px); overflow-y: auto;
 }
 .onb-skip { position: absolute; top: 22px; right: 26px; background: none; border: 0; color: var(--text-soft); font-weight: 600; }
 .onb-skip:hover { color: var(--text); }
@@ -394,7 +430,7 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity: 1; }
   display: flex; align-items: center; justify-content: center; margin-bottom: 30px;
 }
 .onb h2 { font-size: 25px; font-weight: 800; margin: 0 0 12px; text-align: center; }
-.onb p { font-size: 15.5px; color: var(--text-soft); text-align: center; max-width: 480px; line-height: 1.6; margin: 0; }
+.onb p { font-size: 15.5px; color: var(--text-soft); text-align: center; max-width: min(480px, 100%); line-height: 1.6; margin: 0; }
 .onb-dots { display: flex; gap: 8px; margin: 34px 0 22px; }
 .onb-dots i { width: 8px; height: 8px; border-radius: 4px; background: var(--border); transition: width 0.15s, background 0.15s; }
 .onb-dots i.on { width: 22px; background: var(--brand); }
@@ -410,15 +446,28 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity: 1; }
 }
 @keyframes spin { to { transform: rotate(360deg) } }
 
-@media (max-width: 900px) {
-  .grid2, .grid3 { grid-template-columns: 1fr; }
-  .class-head { display: none; }
-  .class-row { grid-template-columns: 1fr 1fr; row-gap: 6px; min-width: 0; }
+/* La barra lateral se reduce a íconos apenas aprieta el ancho: es el trozo
+   de pantalla más caro y el que menos falta hace. Las tablas recuperan
+   156 px con esto, que es lo que separa "cabe" de "hay que desplazar". */
+@media (max-width: 1020px) {
   .sidebar { width: 76px; padding: 18px 10px 12px; }
   .brand p, .nav button span, .sidebar-foot { display: none; }
   .brand h1 { font-size: 15px; text-align: center; }
   .nav button { justify-content: center; }
-  .page { padding: 22px 18px 48px; }
+}
+
+@media (max-width: 860px) {
+  .grid2, .grid3 { grid-template-columns: 1fr; }
+  .cal-cell { aspect-ratio: 1.1; }
+  .toggle-row { align-items: flex-start; }
+}
+
+/* Ventanas bajas: el tutorial ocupa la pantalla entera y no debe cortarse. */
+@media (max-height: 640px) {
+  .onb-icon { width: 84px; height: 84px; margin-bottom: 18px; }
+  .onb h2 { font-size: 21px; }
+  .onb p { font-size: 14px; }
+  .onb-dots { margin: 22px 0 16px; }
 }
 
 /* ---------- Horario de clases ---------- */
@@ -485,11 +534,11 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity: 1; }
 .class-table { width: 100%; margin-top: 4px; overflow-x: auto; }
 .class-head, .class-row {
   display: grid;
-  grid-template-columns: 104px 100px 100px 192px minmax(116px, 1fr) 124px 30px;
+  grid-template-columns: 104px 92px 92px 192px minmax(116px, 1fr) 124px 30px;
   align-items: center; gap: 8px;
   /* Ancho mínimo de las 7 columnas. Con la ventana angosta la tabla se
      desplaza en horizontal en vez de recortar "Aula" y el botón de borrar. */
-  min-width: 814px;
+  min-width: 798px;
 }
 .class-head {
   padding: 0 0 8px; border-bottom: 1px solid var(--slate100);

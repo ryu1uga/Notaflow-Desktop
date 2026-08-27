@@ -9,7 +9,7 @@ export default function CoursesScreen({ onOpen, onCreate }) {
   const [toDelete, setToDelete] = useState(null)
 
   return (
-    <div className="page">
+    <div className="page wide">
       <div className="page-head">
         <div>
           <h2>Mis cursos ({state.courses.length})</h2>
