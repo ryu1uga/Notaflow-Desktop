@@ -6,27 +6,21 @@ import {
 } from '../lib/calc.js'
 import { evalEffectiveDate, weekFromDate, notifyFireAt } from '../lib/schedule.js'
 import {
-  Card, Badge, Progress, Icon, NumField, Switch, TypeField, TimeField,
+  Card, Badge, Progress, Icon, NumField, Switch, TypeField,
   InfoButton, DateField, Confirm,
 } from '../components/ui.jsx'
+import ScheduleSheet from '../components/ScheduleSheet.jsx'
 import { colors, palette, statusColor } from '../theme.js'
 import { TYPES, OTHER, MAX_TIPO } from '../lib/evalTypes.js'
 import {
-  WEEK_ORDER, dayName, MODES, MODE_LABEL, BLOCK_LABELS, MAX_LABEL, MAX_ROOM,
-  minutesOf, fmtTime, weeklyMinutes,
+  WEEK_ORDER, dayName, MODE_LABEL, isVirtual,
+  minutesOf, weeklyMinutes, fmtDuration,
 } from '../lib/classes.js'
 
 const two = (n) => String(n).padStart(2, '0')
 const fmtDate = (d) => (d ? d.toLocaleDateString() : null)
 const fmtDateTime = (d) => `${d.toLocaleDateString()} a las ${two(d.getHours())}:${two(d.getMinutes())}`
 const trimNum = (n) => String(Number(Number(n).toFixed(2)))
-
-// "3 h 20 min" a partir de minutos sueltos.
-const fmtDuration = (mins) => {
-  const h = Math.floor(mins / 60)
-  const m = mins % 60
-  return [h ? `${h} h` : null, m ? `${m} min` : null].filter(Boolean).join(' ') || '0 min'
-}
 
 const STEP_INFO = {
   title: 'Paso de la nota',
@@ -38,6 +32,9 @@ export default function CourseDetailScreen({ course, onBack }) {
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [dragId, setDragId] = useState(null)
   const [overId, setOverId] = useState(null)
+  // La clase que la hoja tiene abierta. null = cerrada; { session: null } = una
+  // nueva de este curso. Es la misma hoja que usa la pestaña Horario.
+  const [hoja, setHoja] = useState(null)
 
   const scale = effectiveScale(course, state.settings)
   const round = effectiveRound(course, state.settings)
@@ -47,8 +44,6 @@ export default function CourseDetailScreen({ course, onBack }) {
 
   const patchCourse = (patch) => dispatch({ type: 'UPDATE_COURSE', id: course.id, patch })
   const patchEval = (evalId, patch) => dispatch({ type: 'UPDATE_EVAL', courseId: course.id, evalId, patch })
-
-  const patchSession = (sessionId, patch) => dispatch({ type: 'UPDATE_SESSION', courseId: course.id, sessionId, patch })
 
   // Las clases se listan de lunes a domingo. Se ordena de forma tolerante:
   // una hora a medio escribir no puede hacer desaparecer la fila.
@@ -60,26 +55,6 @@ export default function CourseDetailScreen({ course, onBack }) {
   })
   const semanales = weeklyMinutes(course)
   const horasIncompletas = sessions.some((s) => minutesOf(s.start) == null || minutesOf(s.end) == null)
-  // ¿Esta clase termina antes de empezar?
-  const rangoMalo = (s) => {
-    const a = minutesOf(s.start)
-    const b = minutesOf(s.end)
-    return a != null && b != null && b <= a
-  }
-  const hayRangoMalo = sessions.some(rangoMalo)
-
-  // Al mover la hora de inicio, la clase conserva su duración.
-  const setStart = (s, v) => {
-    const antes = minutesOf(s.start)
-    const fin = minutesOf(s.end)
-    const nuevo = minutesOf(v)
-    if (nuevo == null || antes == null || fin == null || fin <= antes) return patchSession(s.id, { start: v })
-    patchSession(s.id, { start: v, end: fmtTime(nuevo + (fin - antes)) })
-  }
-
-  // La hora de fin se guarda tal cual. Si queda antes del inicio se marca la
-  // fila y se avisa debajo de la tabla, en vez de reescribirla por el usuario.
-  const setEnd = (s, v) => patchSession(s.id, { end: v })
 
   // Fija el día exacto de una evaluación y, si hay fecha de inicio, deriva la semana.
   const setEvalDate = (evalId, iso) => {
@@ -343,68 +318,26 @@ export default function CourseDetailScreen({ course, onBack }) {
           Los días y horas en que te toca este curso. Aparecen todos juntos en la pestaña Horario.
         </p>
 
-        {sessions.length > 0 && (
-          <div className="class-table">
-            <div className="class-head">
-              <div>Día</div>
-              <div>Inicio</div>
-              <div>Fin</div>
-              <div>Modalidad</div>
-              <div>Bloque</div>
-              <div>Aula</div>
-              <div />
-            </div>
-
-            {sessions.map((s) => (
-              <div key={s.id} className="class-row">
-                <div className="select">
-                  <select value={s.day} aria-label="Día de la clase"
-                    onChange={(ev) => patchSession(s.id, { day: Number(ev.target.value) })}>
-                    {WEEK_ORDER.map((d) => <option key={d} value={d}>{dayName(d, true)}</option>)}
-                  </select>
-                  <Icon name="chevron-down" size={13} color={colors.textSoft} />
-                </div>
-
-                <TimeField value={s.start} label="Hora de inicio"
-                  onCommit={(v) => setStart(s, v)} />
-
-                <TimeField value={s.end} label="Hora de fin" invalid={rangoMalo(s)}
-                  onCommit={(v) => setEnd(s, v)} />
-
-                <div className="seg">
-                  {MODES.map((m) => (
-                    <button key={m} className={s.mode === m ? 'on' : ''}
-                      onClick={() => patchSession(s.id, { mode: m })}>
-                      {MODE_LABEL[m]}
-                    </button>
-                  ))}
-                </div>
-
-                <TypeField
-                  value={s.label || ''}
-                  options={BLOCK_LABELS}
-                  maxLength={MAX_LABEL}
-                  fallback=""
-                  emptyLabel="Sin bloque"
-                  label="Tipo de bloque"
-                  title="Tipo de bloque"
-                  hint="Escribe cómo se llama este bloque, como aparece en tu horario."
-                  placeholder="Asesoría, Práctica dirigida…"
-                  onChange={(l) => patchSession(s.id, { label: l })}
-                />
-
-                <input className="text" maxLength={MAX_ROOM} aria-label="Aula"
-                  placeholder={s.mode === 'virtual' ? 'Sala, plataforma…' : 'B-204'}
-                  value={s.room || ''} onChange={(ev) => patchSession(s.id, { room: ev.target.value })} />
-
-                <button className="icon-btn" aria-label="Eliminar clase"
-                  onClick={() => dispatch({ type: 'DELETE_SESSION', courseId: course.id, sessionId: s.id })}>
-                  <Icon name="x" size={15} color={colors.textFaint} />
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
+        {sessions.map((s) => (
+          <button key={s.id} className="act-row" onClick={() => setHoja({ session: s })}
+            title="Editar esta clase">
+            <span className="act-time">{dayName(s.day)} {s.start || '--:--'}</span>
+            <span className={`act-bar ${isVirtual(s) ? 'virtual' : ''}`}
+              style={{ background: course.color }} />
+            <span className="act-main">
+              <span className="act-name">
+                {minutesOf(s.start) == null || minutesOf(s.end) == null
+                  ? 'Falta la hora'
+                  : `${s.start} – ${s.end}`}
+              </span>
+              <span className="act-meta">
+                {[MODE_LABEL[s.mode] || MODE_LABEL.presencial, s.label, s.room]
+                  .filter(Boolean).join('  ·  ')}
+              </span>
+            </span>
+            <Icon name="edit-3" size={15} color={colors.textFaint} className="act-edit" />
+          </button>
+        ))}
 
         {horasIncompletas && (
           <p className="hint" style={{ color: colors.amber }}>
@@ -412,16 +345,19 @@ export default function CourseDetailScreen({ course, onBack }) {
           </p>
         )}
 
-        {hayRangoMalo && (
-          <p className="hint" style={{ color: colors.amber }}>
-            Hay una clase que termina antes de empezar: revisa su hora de fin.
-          </p>
-        )}
-
-        <button className="btn dashed" onClick={() => dispatch({ type: 'ADD_SESSION', courseId: course.id })}>
+        <button className="btn dashed" onClick={() => setHoja({ session: null })}>
           + Agregar clase
         </button>
       </Card>
+
+      {hoja && (
+        <ScheduleSheet
+          key={hoja.session?.id ?? 'nueva'}
+          lockCourseId={course.id}
+          edit={hoja.session ? { kind: 'clase', courseId: course.id, session: hoja.session } : null}
+          onClose={() => setHoja(null)}
+        />
+      )}
 
       {/* Escala del curso */}
       <Card style={{ marginTop: 14, marginBottom: 20 }}>

@@ -17,6 +17,11 @@
 //  · label es el tipo de sesión (Teoría, Laboratorio…), texto libre
 //  · room es el aula; puede quedar vacío
 //
+//  Nombre y tipo son cosas distintas y viven en campos distintos. En una
+//  clase el nombre lo pone el curso y el tipo va en label. En una actividad
+//  el nombre lo pones tú y el tipo también va en label,
+//  con la misma llave, para que la rejilla no tenga que distinguirlos.
+//
 //  Los cursos guardados antes de esta versión no tienen `sessions`.
 //  Por eso todo lo de aquí lee siempre con `course.sessions ?? []`:
 //  ningún respaldo viejo necesita migración.
@@ -45,9 +50,16 @@ export const MODES = ['presencial', 'virtual']
 export const MODE_LABEL = { presencial: 'Presencial', virtual: 'Virtual' }
 export const isVirtual = (s) => s?.mode === 'virtual'
 
-// Etiquetas sugeridas del bloque. El campo es texto libre: estas solo
-// se ofrecen para elegir de un toque.
-export const BLOCK_LABELS = ['Teoría', 'Laboratorio', 'Práctica', 'Taller', 'Seminario']
+// Tipo de una sesión de curso. Solo lo académico: una clase no es un
+// traslado ni una cita médica. El campo es texto libre; estos se ofrecen
+// para elegir de un toque.
+//
+// OJO con el nombre: antes esto se llamaba BLOCK_LABELS y en la interfaz salía
+// como “Bloque”, igual que las actividades de state.blocks. Eran dos cosas
+// distintas con el mismo nombre en la misma pantalla. Aquí “tipo” es qué clase
+// de sesión es (Teoría, Laboratorio) y “actividad” es lo del horario que no
+// pertenece a ningún curso.
+export const SESSION_TYPES = ['Teoría', 'Laboratorio', 'Práctica', 'Taller', 'Seminario']
 export const MAX_LABEL = 20
 export const MAX_ROOM = 24
 
@@ -134,22 +146,34 @@ export function isCourseActive(course, date = new Date()) {
 //  Bloques libres: lo del horario que no es un curso
 // ------------------------------------------------------------
 //  Viven en state.blocks (no dentro de un curso) y se ven así:
-//    { id, name, color, day, start, end, mode, room, startDate, endDate }
+//    { id, name, label, color, day, start, end, mode, room, startDate, endDate }
 //  · día, horas y modalidad funcionan igual que en una sesión de curso
 //  · name y color son propios, porque no cuelgan de ningún curso
+//  · label es el tipo (Trabajo, Deporte…), la misma llave que en una clase
 //  · startDate/endDate son opcionales: sin ellas el bloque es permanente,
 //    con ellas se comporta como un curso con fechas (una práctica de tres
 //    meses desaparece sola al terminar)
 //  Los respaldos viejos no traen la lista; por eso todo lee `blocks ?? []`.
+//  Tampoco traen `label`: esos bloques salen sin tipo, que es correcto.
 
 export const DEFAULT_BLOCK = {
-  name: '', color: '#3b7ea1', day: 1, start: '08:00', end: '10:00',
+  name: '', label: '', color: '#3b7ea1', day: 1, start: '08:00', end: '10:00',
   mode: 'presencial', room: '', startDate: null, endDate: null,
 }
 export const MAX_BLOCK_NAME = 28
 
-// Nombres sugeridos, para llenar de un toque los casos más comunes.
-export const BLOCK_SUGGESTIONS = ['Trabajo', 'Prácticas', 'Asesoría', 'Estudio', 'Gimnasio']
+// Tipo de una actividad. A diferencia del tipo de una clase, aquí sí entra lo
+// que no es ni académico ni laboral: el cuerpo (Deporte, Salud), la rutina que
+// de verdad ocupa el día (Traslado) y lo personal (Ocio). Es texto libre, así
+// que la lista solo ahorra teclear; para cualquier otra cosa se escribe.
+//
+// Antes esto se llamaba BLOCK_SUGGESTIONS y llenaba el NOMBRE del bloque, que
+// era el error: 'Trabajo' no es el nombre de nada, es de qué tipo es. El
+// nombre ahora lo pones tú y esto es el tipo.
+export const ACTIVITY_TYPES = [
+  'Trabajo', 'Prácticas', 'Estudio', 'Asesoría',
+  'Deporte', 'Salud', 'Traslado', 'Ocio',
+]
 
 // Los bloques con día y horas válidas, ordenados como las sesiones.
 export function sortedBlocks(blocks = []) {
@@ -193,7 +217,7 @@ export function allSessions(courses = [], { onlyActive = false, date = new Date(
       ...b,
       blockId: b.id,
       courseId: null,
-      courseName: b.name || 'Sin nombre',
+      courseName: b.name || b.label || 'Sin nombre',
       courseColor: b.color || DEFAULT_BLOCK.color,
       startMin: minutesOf(b.start),
       endMin: minutesOf(b.end),
@@ -295,5 +319,92 @@ export function nextClass(courses = [], now = new Date(), blocks = []) {
       return { ...s, date: when, ongoing, minutesAway: Math.round((when.getTime() - now.getTime()) / 60000) }
     }
   }
+  return null
+}
+
+// ------------------------------------------------------------
+//  Alta de horario
+// ------------------------------------------------------------
+//  Lo que necesita la hoja de "Agregar al horario", que es la misma para una
+//  clase de curso y para una actividad. Vive aquí y no en la pantalla porque
+//  las dos apps la usan igual.
+//
+//  El borrador que maneja la hoja lleva dos llaves de trabajo que NUNCA se
+//  guardan: `kind` ('clase' | 'actividad') y `days` (los días marcados, para
+//  crear varias entradas de una sola vez). expandDays las quita.
+
+// Cuánto dura por defecto lo que se agrega, en minutos.
+export const DEFAULT_DURATION = 110
+
+// "3 h 20 min" a partir de minutos sueltos.
+export function fmtDuration(mins) {
+  const h = Math.floor(mins / 60)
+  const m = mins % 60
+  return [h ? `${h} h` : null, m ? `${m} min` : null].filter(Boolean).join(' ') || '0 min'
+}
+
+// Color para la próxima actividad: el primero de la paleta que nadie use
+// todavía. Sin esto, toda actividad nueva nacía del mismo azul.
+export function nextBlockColor(blocks = [], palette = []) {
+  if (!palette.length) return DEFAULT_BLOCK.color
+  const usados = new Set((blocks ?? []).map((b) => b.color))
+  return palette.find((c) => !usados.has(c)) || palette[(blocks?.length ?? 0) % palette.length]
+}
+
+// Lo que ya ocupa un día, clases y actividades juntas, ordenado por hora.
+// No filtra por vigencia a propósito: para avisar de un cruce da igual que el
+// curso ya haya acabado. `skipId` deja fuera lo que se está editando.
+export function busyOn(day, { courses = [], blocks = [], skipId = null } = {}) {
+  return allSessions(courses, { onlyActive: false, blocks })
+    .filter((s) => s.day === day && s.id !== skipId)
+    .sort((a, b) => a.startMin - b.startMin)
+}
+
+// Con qué se cruza este borrador. Dos franjas se pisan cuando cada una
+// empieza antes de que la otra termine. Devuelve la lista de lo pisado, para
+// poder decirlo con nombre, día y hora.
+export function findConflicts(draft, { courses = [], blocks = [], skipId = null } = {}) {
+  const a = minutesOf(draft?.start)
+  const b = minutesOf(draft?.end)
+  if (a == null || b == null || b <= a) return []
+  const dias = draft.days?.length ? draft.days : (draft.day != null ? [draft.day] : [])
+  const out = []
+  for (const d of dias) {
+    for (const s of busyOn(d, { courses, blocks, skipId })) {
+      if (s.startMin < b && a < s.endMin) out.push(s)
+    }
+  }
+  return out
+}
+
+// Un hueco razonable para lo próximo de ese día: pegado a lo último que hay
+// (redondeado a los 5 min), o las 08:00 si el día está libre. Si eso se
+// saliera de la noche, vuelve a las 08:00 y que hable el aviso de cruce.
+export function suggestSlot(day, { courses = [], blocks = [], minutes = DEFAULT_DURATION } = {}) {
+  const ocupado = busyOn(day, { courses, blocks })
+  const fin = ocupado.length ? Math.max(...ocupado.map((s) => s.endMin)) : null
+  let inicio = fin == null ? 8 * 60 : Math.ceil((fin + 10) / 5) * 5
+  if (inicio + minutes > 22 * 60) inicio = 8 * 60
+  return { start: fmtTime(inicio), end: fmtTime(inicio + minutes) }
+}
+
+// Un borrador con varios días marcados se vuelve una entrada por día, ya sin
+// las llaves de trabajo de la hoja.
+export function expandDays(draft = {}, days = []) {
+  const limpio = { ...draft }
+  delete limpio.days
+  delete limpio.kind
+  const dias = days.length ? days : (draft.day != null ? [draft.day] : [])
+  return dias.map((day) => ({ ...limpio, day }))
+}
+
+// ¿Se puede guardar? Devuelve el motivo por el que no, o null si está bien.
+export function draftError(draft = {}) {
+  if (!(draft.days?.length) && draft.day == null) return 'Elige al menos un día.'
+  const a = minutesOf(draft.start)
+  const b = minutesOf(draft.end)
+  if (a == null || b == null) return 'Faltan las horas de inicio y fin.'
+  if (b <= a) return 'La hora de fin tiene que ser posterior a la de inicio.'
+  if (draft.kind === 'clase' && !draft.courseId) return 'Elige el curso al que pertenece la clase.'
   return null
 }

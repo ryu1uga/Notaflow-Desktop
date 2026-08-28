@@ -1,12 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { useStore } from '../lib/store.jsx'
 import {
-  WEEK_ORDER, dayName, MODES, MODE_LABEL, isVirtual, minutesOf,
+  WEEK_ORDER, dayName, MODE_LABEL, isVirtual,
   allSessions, sessionsByDay, layoutDay, dayBounds, fmtTime, nextClass,
-  BLOCK_SUGGESTIONS, MAX_BLOCK_NAME, MAX_ROOM,
 } from '../lib/classes.js'
-import { Card, Switch, Icon, TimeField, Modal, DateField } from '../components/ui.jsx'
-import { colors, palette } from '../theme.js'
+import { Card, Switch, Icon } from '../components/ui.jsx'
+import ScheduleSheet from '../components/ScheduleSheet.jsx'
+import { colors } from '../theme.js'
 
 // Alto de un minuto en la rejilla, en píxeles.
 const PX_PER_MIN = 1
@@ -39,7 +39,7 @@ function whenText(next, now) {
 }
 
 export default function TimetableScreen({ onOpen }) {
-  const { state, dispatch } = useStore()
+  const { state } = useStore()
   const [onlyActive, setOnlyActive] = useState(true)
   // El reloj se refresca cada minuto: así la línea de "ahora" y la cuenta
   // regresiva de la próxima clase no se quedan congeladas.
@@ -51,6 +51,9 @@ export default function TimetableScreen({ onOpen }) {
 
   const [printing, setPrinting] = useState(false)
 
+  // La hoja de agregar/editar. null = cerrada; { edit: null } = una nueva.
+  const [hoja, setHoja] = useState(null)
+
   const blocks = state.blocks ?? []
   const sessions = useMemo(
     () => allSessions(state.courses, { onlyActive, date: now, blocks }),
@@ -61,6 +64,19 @@ export default function TimetableScreen({ onOpen }) {
     [state.courses, blocks, onlyActive, now],
   )
   const next = useMemo(() => nextClass(state.courses, now, blocks), [state.courses, blocks, now])
+
+  // Un clic en la rejilla abre lo que sea que se toco, en la misma hoja. Antes
+  // una clase saltaba al curso y una actividad se editaba en una tabla aparte.
+  const abrir = (s) => {
+    if (s.blockId) {
+      const b = blocks.find((x) => x.id === s.blockId)
+      if (b) setHoja({ edit: { kind: 'actividad', block: b } })
+      return
+    }
+    const c = state.courses.find((x) => x.id === s.courseId)
+    const sesion = (c?.sessions ?? []).find((x) => x.id === s.id)
+    if (sesion) setHoja({ edit: { kind: 'clase', courseId: s.courseId, session: sesion } })
+  }
 
   // Días a mostrar: los que tienen clase. Si no hay ninguno, de lunes a viernes.
   const conClase = WEEK_ORDER.filter((d) => (byDay[d] || []).length > 0)
@@ -110,6 +126,10 @@ export default function TimetableScreen({ onOpen }) {
             title="Imprime la semana en una hoja A4 apaisada">
             <Icon name="printer" size={15} /> Imprimir
           </button>
+          <button className="btn primary" onClick={() => setHoja({ edit: null })}
+            title="Agrega una clase de un curso o una actividad">
+            <Icon name="plus" size={15} /> Agregar al horario
+          </button>
         </div>
       </div>
 
@@ -122,7 +142,7 @@ export default function TimetableScreen({ onOpen }) {
           </div>
           <div className="row" style={{ gap: 9, marginTop: 6 }}>
             <span className="dot" style={{ background: next.courseColor }} />
-            <button className="link-strong" onClick={() => onOpen(next.courseId)}>{next.courseName}</button>
+            <button className="link-strong" onClick={() => abrir(next)}>{next.courseName}</button>
             <span className="tt-tag">{MODE_LABEL[next.mode] || MODE_LABEL.presencial}</span>
           </div>
           <p className="hint" style={{ marginTop: 6 }}>
@@ -139,7 +159,8 @@ export default function TimetableScreen({ onOpen }) {
       <Card style={{ marginTop: next ? 14 : 0 }}>
         {vacío ? (
           <p className="empty">
-            Todavía no hay clases. Abre un curso y agrégalas en la tarjeta “Clases”.
+            Todavía no hay nada esta semana. Usa “Agregar al horario”: sirve
+            igual para una clase de un curso que para lo que no es un curso.
           </p>
         ) : (
           <div className="tt" style={{ '--tt-cols': days.length }}>
@@ -195,7 +216,7 @@ export default function TimetableScreen({ onOpen }) {
                           background: tint(s.courseColor, 0.13),
                           borderColor: s.courseColor,
                         }}
-                        onClick={() => s.courseId && onOpen(s.courseId)}
+                        onClick={() => abrir(s)}
                         title={`${s.courseName} · ${s.start}–${s.end} · ${MODE_LABEL[s.mode] || ''}${s.room ? ` · ${s.room}` : ''}`}
                       >
                         <span className="tt-block-name" style={{ color: s.courseColor }}>{s.courseName}</span>
@@ -242,148 +263,79 @@ export default function TimetableScreen({ onOpen }) {
       {!vacío && (
         <p className="hint">
           <Icon name="info" size={13} color={colors.textFaint} />{' '}
-          El borde punteado marca lo virtual. Haz clic en una clase para abrir su curso;
-          los bloques que no son de un curso se editan aquí abajo.
+          El borde punteado marca lo virtual. Haz clic en cualquier bloque de la
+          rejilla para editarlo, sea una clase o una actividad.
         </p>
       )}
 
-      <BloquesCard blocks={blocks} dispatch={dispatch} />
+      <ActividadesCard blocks={blocks}
+        onNueva={() => setHoja({ edit: null, kind: 'actividad' })}
+        onEditar={(b) => setHoja({ edit: { kind: 'actividad', block: b } })} />
+
+      {hoja && (
+        <ScheduleSheet
+          key={hoja.edit?.session?.id ?? hoja.edit?.block?.id ?? 'nueva'}
+          edit={hoja.edit}
+          defaultKind={hoja.kind ?? null}
+          onOpenCourse={onOpen}
+          onClose={() => setHoja(null)}
+        />
+      )}
     </div>
   )
 }
 
 // ------------------------------------------------------------
-//  Otros bloques: lo del horario que no es un curso
+//  Actividades: lo del horario que no es un curso
 // ------------------------------------------------------------
+//  Antes esto era una tabla de nueve columnas que obligaba a desplazar en
+//  horizontal y que editaba con controles distintos a los de una clase. Ahora
+//  solo lista lo que hay; agregar y editar pasan por la hoja compartida.
 const fmtFecha = (iso) => (iso ? new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short' }) : null)
 
-function BloquesCard({ blocks, dispatch }) {
-  const [colorDe, setColorDe] = useState(null)     // id del bloque con el selector de color abierto
-  const [fechasDe, setFechasDe] = useState(null)   // id del bloque con las fechas abiertas
+const vigencia = (b) => {
+  const a = fmtFecha(b.startDate)
+  const z = fmtFecha(b.endDate)
+  if (!a && !z) return null
+  if (a && z) return `${a} – ${z}`
+  return a ? `Desde ${a}` : `Hasta ${z}`
+}
 
-  const patch = (id, p) => dispatch({ type: 'UPDATE_BLOCK', id, patch: p })
-  const editandoColor = blocks.find((b) => b.id === colorDe)
-  const editandoFechas = blocks.find((b) => b.id === fechasDe)
-
-  const vigencia = (b) => {
-    const a = fmtFecha(b.startDate)
-    const z = fmtFecha(b.endDate)
-    if (!a && !z) return 'Siempre'
-    if (a && z) return `${a} – ${z}`
-    return a ? `Desde ${a}` : `Hasta ${z}`
-  }
-
+function ActividadesCard({ blocks, onNueva, onEditar }) {
   return (
     <Card style={{ marginTop: 14 }}>
       <div className="row between" style={{ marginBottom: 10 }}>
-        <h3 className="section-title">Otros bloques</h3>
+        <h3 className="section-title">Actividades</h3>
         {blocks.length > 0 && (
           <span className="weights-sum">{blocks.length} en tu semana</span>
         )}
       </div>
       <p className="p">
-        Lo que te ocupa la semana sin ser un curso: el trabajo, las prácticas, el gimnasio.
+        Lo que te ocupa la semana sin ser un curso: el trabajo, el deporte, los traslados.
         Sale en la rejilla de arriba junto a las clases, pero no cuenta para ninguna nota.
       </p>
 
-      <datalist id="nombres-de-bloque">
-        {BLOCK_SUGGESTIONS.map((n) => <option key={n} value={n} />)}
-      </datalist>
+      {blocks.map((b) => (
+        <button key={b.id} className="act-row" onClick={() => onEditar(b)}
+          title={`Editar ${b.name || 'esta actividad'}`}>
+          <span className="act-time">{dayName(b.day)} {b.start}</span>
+          <span className={`act-bar ${b.mode === 'virtual' ? 'virtual' : ''}`}
+            style={{ background: b.color }} />
+          <span className="act-main">
+            <span className="act-name">{b.name || b.label || 'Sin nombre'}</span>
+            <span className="act-meta">
+              {[`${b.start}–${b.end}`, b.name ? b.label : null,
+                MODE_LABEL[b.mode] || MODE_LABEL.presencial, b.room, vigencia(b)]
+                .filter(Boolean).join('  ·  ')}
+            </span>
+          </span>
+          <Icon name="edit-3" size={15} color={colors.textFaint} className="act-edit" />
+        </button>
+      ))}
 
-      {blocks.length > 0 && (
-        <div className="class-table">
-          <div className="block-head">
-            <div />
-            <div>Nombre</div>
-            <div>Día</div>
-            <div>Inicio</div>
-            <div>Fin</div>
-            <div>Modalidad</div>
-            <div>Lugar</div>
-            <div>Vigencia</div>
-            <div />
-          </div>
-
-          {blocks.map((b) => (
-            <div key={b.id} className="block-row">
-              <button className="swatch sm" style={{ background: b.color }} onClick={() => setColorDe(b.id)}
-                aria-label={`Color de ${b.name || 'este bloque'}`} />
-
-              <input className="text" list="nombres-de-bloque" maxLength={MAX_BLOCK_NAME}
-                aria-label="Nombre del bloque" placeholder="Trabajo, Prácticas…"
-                value={b.name || ''} onChange={(e) => patch(b.id, { name: e.target.value })} />
-
-              <div className="select">
-                <select value={b.day} aria-label="Día del bloque"
-                  onChange={(e) => patch(b.id, { day: Number(e.target.value) })}>
-                  {WEEK_ORDER.map((d) => <option key={d} value={d}>{dayName(d, true)}</option>)}
-                </select>
-                <Icon name="chevron-down" size={13} color={colors.textSoft} />
-              </div>
-
-              <TimeField value={b.start} label="Hora de inicio" onCommit={(v) => patch(b.id, { start: v })} />
-              <TimeField value={b.end} label="Hora de fin" onCommit={(v) => patch(b.id, { end: v })}
-                invalid={minutesOf(b.start) != null && minutesOf(b.end) != null
-                  && minutesOf(b.end) <= minutesOf(b.start)} />
-
-              <div className="select">
-                <select value={b.mode || 'presencial'} aria-label="Modalidad del bloque"
-                  onChange={(e) => patch(b.id, { mode: e.target.value })}>
-                  {MODES.map((m) => <option key={m} value={m}>{MODE_LABEL[m]}</option>)}
-                </select>
-                <Icon name="chevron-down" size={13} color={colors.textSoft} />
-              </div>
-
-              <input className="text" maxLength={MAX_ROOM} aria-label="Lugar"
-                placeholder={b.mode === 'virtual' ? 'Sala, plataforma…' : 'Oficina, sede…'}
-                value={b.room || ''} onChange={(e) => patch(b.id, { room: e.target.value })} />
-
-              <button className="btn ghost vigencia" onClick={() => setFechasDe(b.id)}
-                title="Desde cuándo y hasta cuándo va este bloque">
-                {vigencia(b)}
-              </button>
-
-              <button className="icon-btn" aria-label="Eliminar bloque"
-                onClick={() => dispatch({ type: 'DELETE_BLOCK', id: b.id })}>
-                <Icon name="x" size={15} color={colors.textFaint} />
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
-
-      <button className="btn dashed" onClick={() => dispatch({ type: 'ADD_BLOCK' })}>
-        + Agregar bloque
+      <button className="btn dashed" onClick={onNueva}>
+        + Agregar actividad
       </button>
-
-      <Modal open={editandoColor != null} onClose={() => setColorDe(null)} title="Color del bloque" width={320}>
-        <div className="swatches">
-          {palette.map((col) => (
-            <button key={col} className={`swatch ${editandoColor?.color === col ? 'active' : ''}`}
-              style={{ background: col }} aria-label={`Color ${col}`}
-              onClick={() => { patch(colorDe, { color: col }); setColorDe(null) }} />
-          ))}
-        </div>
-      </Modal>
-
-      <Modal open={editandoFechas != null} onClose={() => setFechasDe(null)} title="Vigencia del bloque" width={380}>
-        <p className="sheet-text">
-          Déjalas vacías y el bloque sale siempre. Con fechas se comporta como un curso:
-          entra y sale del horario solo, y el interruptor “Solo lo vigente” lo filtra igual.
-        </p>
-        {editandoFechas && (
-          <div className="grid2" style={{ marginTop: 12 }}>
-            <DateField label="Desde" value={editandoFechas.startDate}
-              onChange={(iso) => patch(fechasDe, { startDate: iso })} />
-            <DateField label="Hasta" value={editandoFechas.endDate} min={editandoFechas.startDate}
-              onChange={(iso) => patch(fechasDe, { endDate: iso })} />
-          </div>
-        )}
-        <div className="sheet-actions">
-          <button className="btn primary" onClick={() => setFechasDe(null)}>Listo</button>
-        </div>
-      </Modal>
     </Card>
   )
 }
-

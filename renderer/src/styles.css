@@ -129,16 +129,18 @@ button { cursor: pointer; }
   white-space: nowrap;
 }
 .btn.primary { background: var(--brand); color: #fff; }
-.btn.primary:hover { background: var(--brand-dark); }
+.btn.primary:hover:not(:disabled) { background: var(--brand-dark); }
 .btn.ghost { background: transparent; border-color: var(--border); color: var(--text); }
-.btn.ghost:hover { background: var(--slate50); }
+.btn.ghost:hover:not(:disabled) { background: var(--slate50); }
 .btn.danger { background: var(--red); color: #fff; }
-.btn.danger:hover { filter: brightness(0.93); }
+.btn.danger:hover:not(:disabled) { filter: brightness(0.93); }
 .btn.dashed {
   width: 100%; border: 1px dashed var(--border); background: transparent;
   color: var(--brand); padding: 10px; margin-top: 12px;
 }
-.btn.dashed:hover { background: var(--slate50); }
+.btn.dashed:hover:not(:disabled) { background: var(--slate50); }
+/* Un botón apagado tiene que parecerlo, o se lee como que la app no responde. */
+.btn:disabled { opacity: 0.4; cursor: default; }
 
 .icon-btn {
   display: inline-flex; align-items: center; justify-content: center;
@@ -533,48 +535,63 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity: 1; }
 .tt-block.compact { flex-direction: row; align-items: center; gap: 7px; padding: 2px 8px; }
 
 /* Tarjeta "Clases" del detalle del curso */
-.class-table { width: 100%; margin-top: 4px; overflow-x: auto; }
-.class-head, .class-row {
-  display: grid;
-  grid-template-columns: 104px 92px 92px 192px minmax(116px, 1fr) 124px 30px;
-  align-items: center; gap: 8px;
-  /* Ancho mínimo de las 7 columnas. Con la ventana angosta la tabla se
-     desplaza en horizontal en vez de recortar "Aula" y el botón de borrar. */
-  min-width: 798px;
+/* Lista de actividades (lo del horario que no es de un curso). Ya no es una
+   tabla de nueve columnas con scroll horizontal: cada fila resume la
+   actividad y se edita en la misma hoja que las clases. */
+.act-row {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  padding: 9px 6px; border: 0; border-bottom: 1px solid var(--slate50);
+  border-radius: 8px; text-align: left; background: transparent;
 }
-.class-head {
-  padding: 0 0 8px; border-bottom: 1px solid var(--slate100);
-  font-size: 10px; font-weight: 700; color: var(--text-faint);
-  text-transform: uppercase; letter-spacing: 0.4px;
+.act-row:hover { background: var(--slate50); }
+.act-time { width: 96px; flex-shrink: 0; font-size: 12.5px; font-weight: 700; color: var(--text); }
+.act-bar { width: 4px; align-self: stretch; border-radius: 3px; flex-shrink: 0; }
+.act-bar.virtual { opacity: 0.4; }
+.act-main { flex: 1; min-width: 0; }
+.act-name { display: block; font-size: 13.5px; font-weight: 700; color: var(--text); }
+.act-meta {
+  display: block; font-size: 11.5px; color: var(--text-soft); margin-top: 2px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.class-row { padding: 7px 0; border-bottom: 1px solid var(--slate50); }
-.class-row .select { width: 100%; }
+.act-edit { flex-shrink: 0; color: var(--text-faint); }
 
-/* Tabla de "Otros bloques" (horario que no es de un curso). Mismo patrón que
-   la de clases, con dos columnas más: el color y la vigencia. */
-.block-head, .block-row {
-  display: grid;
-  grid-template-columns: 24px minmax(130px, 1.2fr) 104px 92px 92px 116px minmax(110px, 1fr) 116px 30px;
-  align-items: center; gap: 8px;
-  min-width: 878px;
+/* ---------- Hoja de "Agregar al horario" ---------- */
+.hs-kind { display: flex; width: 100%; margin-bottom: 4px; }
+.hs-kind button { flex: 1; }
+.hs-kind button:disabled { opacity: 0.45; }
+.hs-section { margin-top: 14px; }
+.hs-note { font-size: 11.5px; font-weight: 400; color: var(--text-faint); }
+.hs-note.block { display: block; margin: 6px 0 0; line-height: 1.5; }
+.hs-days { display: flex; flex-wrap: wrap; gap: 6px; }
+.hs-day {
+  min-width: 46px; padding: 7px 11px; border-radius: 999px;
+  border: 1px solid var(--border); background: var(--slate50);
+  font-size: 12.5px; font-weight: 700; color: var(--text-soft);
 }
-.block-head {
-  padding: 0 0 8px; border-bottom: 1px solid var(--slate100);
-  font-size: 10px; font-weight: 700; color: var(--text-faint);
-  text-transform: uppercase; letter-spacing: 0.4px;
+.hs-day:hover { border-color: var(--brand); }
+.hs-day.on { background: var(--brand-light); border-color: var(--brand); color: var(--brand-dark); }
+.hs-pills { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.hs-pill {
+  padding: 6px 11px; border-radius: 999px;
+  border: 1px solid var(--border); background: var(--slate50);
+  font-size: 12px; font-weight: 600; color: var(--text-soft);
 }
-.block-row { padding: 7px 0; border-bottom: 1px solid var(--slate50); }
-.block-row .select { width: 100%; }
-.swatch.sm { width: 20px; height: 20px; border-width: 2px; }
-.btn.ghost.vigencia {
-  width: 100%; padding: 7px 8px; font-size: 11.5px; font-weight: 600;
-  color: var(--text-soft); overflow: hidden; text-overflow: ellipsis;
+.hs-pill:hover { border-color: var(--brand); }
+.hs-pill.on { background: var(--brand-light); border-color: var(--brand); color: var(--brand-dark); }
+/* "Otro…" no es un tipo más: abre el campo de texto de al lado. */
+.hs-pill.otro { border-style: dashed; }
+.hs-warn {
+  display: flex; gap: 9px; margin-top: 16px; padding: 11px 12px;
+  border-radius: 10px; background: var(--amber-bg); color: var(--text);
+  font-size: 12.5px; line-height: 1.5;
 }
-/* En la tabla, el segmentado ocupa toda su celda y los dos botones se
-   reparten el ancho a medias, así que "Virtual" nunca se recorta. */
-.class-row .seg { display: flex; width: 100%; }
-.class-row .seg button { flex: 1; padding: 6px 8px; text-align: center; }
-
+.hs-warn ul { margin: 5px 0 4px; padding-left: 16px; color: var(--text-soft); }
+.hs-warn li { margin: 1px 0; }
+.hs-error { margin: 14px 0 0; font-size: 12.5px; font-weight: 700; color: var(--amber); text-align: right; }
+/* Antes de tocar nada el mismo texto es una guía, no un error. */
+.hs-error.suave { color: var(--text-soft); font-weight: 600; }
+.hs-del { color: var(--red); border-color: transparent; }
+.hs-del:hover { background: var(--red-bg); }
 /* ---------- Impresión del horario (A4 apaisado) ---------- */
 /* En pantalla no se ven: son la cabecera y la leyenda de la hoja. */
 .tt-print-head, .tt-detalle { display: none; }
