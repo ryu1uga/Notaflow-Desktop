@@ -141,6 +141,42 @@ export function isCourseActive(course, date = new Date()) {
   return true
 }
 
+// Lunes 00:00 y domingo 23:59 de la semana que contiene `date`. La semana
+// arranca el lunes, igual que WEEK_ORDER.
+export function weekRangeOf(date = new Date()) {
+  const d = new Date(date)
+  if (Number.isNaN(d.getTime())) return null
+  d.setHours(0, 0, 0, 0)
+  const shift = (d.getDay() + 6) % 7 // 0 = lunes … 6 = domingo
+  const from = new Date(d)
+  from.setDate(d.getDate() - shift)
+  const to = new Date(from)
+  to.setDate(from.getDate() + 6)
+  to.setHours(23, 59, 59, 999)
+  return { from, to }
+}
+
+// ¿El curso o el bloque toca el rango en algún punto? Sin fechas, siempre sí.
+// Basta con que se solapen: algo que empieza el miércoles ya cuenta el lunes.
+export function isActiveInRange(item, from, to) {
+  if (!from || !to) return true
+  if (item?.startDate) {
+    const s = new Date(item.startDate)
+    if (!Number.isNaN(s.getTime())) { s.setHours(0, 0, 0, 0); if (s > to) return false }
+  }
+  if (item?.endDate) {
+    const e = new Date(item.endDate)
+    if (!Number.isNaN(e.getTime())) { e.setHours(23, 59, 59, 999); if (e < from) return false }
+  }
+  return true
+}
+
+// ¿Vigente en algún día de la semana que contiene `date`?
+export function isActiveInWeek(item, date = new Date()) {
+  const r = weekRangeOf(date)
+  return r ? isActiveInRange(item, r.from, r.to) : true
+}
+
 
 // ------------------------------------------------------------
 //  Bloques libres: lo del horario que no es un curso
@@ -193,10 +229,18 @@ export function sortedBlocks(blocks = []) {
 // ------------------------------------------------------------
 
 // Todas las sesiones de todos los cursos, con los datos del curso pegados.
-export function allSessions(courses = [], { onlyActive = false, date = new Date(), blocks = [] } = {}) {
+// `scope` decide contra qué se mide la vigencia:
+//   'day'  → solo lo vigente en esa fecha exacta (lo que necesita nextClass).
+//   'week' → lo vigente en cualquier día de esa semana, para que la rejilla
+//            semanal muestre lo que empieza más adelante dentro de la misma
+//            semana en vez de aparecer recién el día que arranca.
+export function allSessions(courses = [], { onlyActive = false, date = new Date(), blocks = [], scope = 'day' } = {}) {
+  const vigente = scope === 'week'
+    ? (item) => isActiveInWeek(item, date)
+    : (item) => isCourseActive(item, date)
   const out = []
   for (const c of courses) {
-    if (onlyActive && !isCourseActive(c, date)) continue
+    if (onlyActive && !vigente(c)) continue
     for (const s of sortedSessions(c)) {
       out.push({
         ...s,
@@ -212,7 +256,7 @@ export function allSessions(courses = [], { onlyActive = false, date = new Date(
   // la rejilla, la lista y la próxima cita no tienen que saber de dónde sale
   // cada uno. Lo que los distingue es courseId: null y blockId con su id.
   for (const b of sortedBlocks(blocks)) {
-    if (onlyActive && !isCourseActive(b, date)) continue
+    if (onlyActive && !vigente(b)) continue
     out.push({
       ...b,
       blockId: b.id,

@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { useStore } from '../lib/store.jsx'
 import {
   WEEK_ORDER, dayName, MODE_LABEL, isVirtual,
-  allSessions, sessionsByDay, layoutDay, dayBounds, fmtTime, nextClass,
+  allSessions, sessionsByDay, layoutDay, dayBounds, fmtTime, nextClass, weekRangeOf,
 } from '../lib/classes.js'
 import { Card, Switch, Icon } from '../components/ui.jsx'
 import ScheduleSheet from '../components/ScheduleSheet.jsx'
@@ -55,14 +55,22 @@ export default function TimetableScreen({ onOpen }) {
   const [hoja, setHoja] = useState(null)
 
   const blocks = state.blocks ?? []
+  // scope 'week': se muestra lo vigente en cualquier día de esta semana, no solo
+  // lo de hoy, para que una actividad que arranca el jueves ya aparezca.
+  const opts = { onlyActive, date: now, blocks, scope: 'week' }
   const sessions = useMemo(
-    () => allSessions(state.courses, { onlyActive, date: now, blocks }),
+    () => allSessions(state.courses, opts),
     [state.courses, blocks, onlyActive, now],
   )
   const byDay = useMemo(
-    () => sessionsByDay(state.courses, { onlyActive, date: now, blocks }),
+    () => sessionsByDay(state.courses, opts),
     [state.courses, blocks, onlyActive, now],
   )
+  // Rango de la semana en curso, para la cabecera de impresión.
+  const semana = useMemo(() => {
+    const r = weekRangeOf(now)
+    return r ? `${r.from.toLocaleDateString()} – ${r.to.toLocaleDateString()}` : now.toLocaleDateString()
+  }, [now])
   const next = useMemo(() => nextClass(state.courses, now, blocks), [state.courses, blocks, now])
 
   // Un clic en la rejilla abre lo que sea que se toco, en la misma hoja. Antes
@@ -119,9 +127,9 @@ export default function TimetableScreen({ onOpen }) {
           <div className="sub">Tus clases de la semana, con aula y modalidad.</div>
         </div>
         <div className="row" style={{ gap: 8 }}>
-          <span className="hint" style={{ margin: 0 }}>Solo lo vigente</span>
+          <span className="hint" style={{ margin: 0 }}>Solo lo de esta semana</span>
           <Switch checked={onlyActive} onChange={setOnlyActive}
-            label="Ocultar los cursos y bloques cuyas fechas ya pasaron" />
+            label="Ocultar los cursos y bloques cuyas fechas no tocan esta semana" />
           <button className="btn ghost" onClick={() => setPrinting(true)} disabled={vacío}
             title="Imprime la semana en una hoja A4 apaisada">
             <Icon name="printer" size={15} /> Imprimir
@@ -167,7 +175,7 @@ export default function TimetableScreen({ onOpen }) {
             {/* Solo se ve en el papel: en pantalla el título ya está arriba. */}
             <div className="tt-print-head">
               <h1>Horario de clases</h1>
-              <span>{onlyActive ? 'Solo lo vigente' : 'Todo'} · {now.toLocaleDateString()}</span>
+              <span>{onlyActive ? `Semana del ${semana}` : 'Todo el horario'}</span>
             </div>
 
             <div className="tt-head">
