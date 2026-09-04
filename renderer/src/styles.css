@@ -1,28 +1,86 @@
 /* ============================================================
    NotaFlow Desktop — hoja de estilos
-   Papel cálido + tinta morada, adaptado a pantalla grande.
+   "Tinta viva": tinta morada sobre papel, con modo oscuro.
+   Tipografía: Inter (texto) + Sora (números y titulares).
+   Los tokens viven en variables CSS; theme.js los reexporta para
+   los estilos en línea del JSX.
    ============================================================ */
 
 :root {
+  /* Marca */
   --brand: #6d4a9c;
-  --brand-dark: #4f3676;
-  --brand-light: #ece3f6;
-  --bg: #f4f0e9;
-  --card: #fffdf9;
-  --border: #e7ddcf;
-  --text: #332d2a;
-  --text-soft: #6f6459;
-  --text-faint: #a99e8e;
-  --slate50: #faf6ef;
-  --slate100: #efe8dc;
-  --emerald: #3f8f5b;
-  --emerald-bg: #e3efe4;
-  --amber: #bf861f;
-  --amber-bg: #f6ecd4;
-  --red: #c14d43;
-  --red-bg: #f6e2de;
-  --radius: 16px;
-  --shadow: 0 2px 8px rgba(51, 45, 42, 0.06);
+  --brand-2: #9061d6;           /* extremo claro del gradiente de marca */
+  --brand-dark: #563982;
+  --brand-light: #ede4f8;
+  --brand-glow: rgba(109, 74, 156, 0.25);
+
+  /* Superficies (claro) */
+  --bg: #f5f2ec;
+  --bg-deep: #efeae1;
+  --card: #fffefb;
+  --border: #e6ddce;
+  --surface-1: #f8f4ec;         /* sutil: hovers, cajas internas */
+  --surface-2: #eee7da;         /* marcada: pistas, segmentos */
+
+  /* Texto */
+  --text: #2e2833;
+  --text-soft: #6e6472;
+  --text-faint: #a49aa8;
+
+  /* Estados */
+  --emerald: #35875a; --emerald-bg: #e2efe5;
+  --amber: #b07d1a;   --amber-bg: #f6ecd2;
+  --red: #c04a42;     --red-bg: #f7e2de;
+
+  /* Sidebar: siempre tinta oscura, en ambos temas */
+  --side-bg: #241b31;
+  --side-bg2: #191221;
+  --side-text: #cdc3dd;
+  --side-faint: #877a99;
+  --side-active: rgba(255, 255, 255, 0.07);
+
+  /* Forma y sombra */
+  --radius: 18px;
+  --radius-s: 12px;
+  --shadow: 0 1px 2px rgba(40, 30, 55, 0.05), 0 4px 16px rgba(40, 30, 55, 0.06);
+  --shadow-lift: 0 2px 4px rgba(40, 30, 55, 0.07), 0 14px 34px rgba(40, 30, 55, 0.13);
+  --ring: 0 0 0 3px rgba(109, 74, 156, 0.18);
+
+  --font-body: "Inter Variable", "Segoe UI", -apple-system, sans-serif;
+  --font-display: "Sora Variable", "Inter Variable", "Segoe UI", sans-serif;
+}
+
+[data-theme="dark"] {
+  --brand: #a684d6;
+  --brand-2: #c3a1f0;
+  --brand-dark: #b795e3;
+  --brand-light: rgba(166, 132, 214, 0.16);
+  --brand-glow: rgba(166, 132, 214, 0.18);
+
+  --bg: #15111b;
+  --bg-deep: #100d15;
+  --card: #1e1826;
+  --border: #322940;
+  --surface-1: #262030;
+  --surface-2: #2f2739;
+
+  --text: #ece7f2;
+  --text-soft: #a89fb4;
+  --text-faint: #6f6580;
+
+  --emerald: #6cc493; --emerald-bg: rgba(108, 196, 147, 0.14);
+  --amber: #dcaa4c;   --amber-bg: rgba(220, 170, 76, 0.14);
+  --red: #e07a6f;     --red-bg: rgba(224, 122, 111, 0.14);
+
+  --side-bg: #191221;
+  --side-bg2: #120d19;
+  --side-text: #c5bad6;
+  --side-faint: #7c7090;
+  --side-active: rgba(255, 255, 255, 0.06);
+
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 18px rgba(0, 0, 0, 0.35);
+  --shadow-lift: 0 2px 4px rgba(0, 0, 0, 0.35), 0 16px 38px rgba(0, 0, 0, 0.5);
+  --ring: 0 0 0 3px rgba(166, 132, 214, 0.28);
 }
 
 * { box-sizing: border-box; }
@@ -32,11 +90,12 @@ html, body, #root { height: 100%; margin: 0; }
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, Inter, Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-family: var(--font-body);
   font-size: 14px;
   -webkit-font-smoothing: antialiased;
   overflow: hidden;
   user-select: none;
+  transition: background 0.25s ease, color 0.25s ease;
 }
 
 input, button, select, textarea { font-family: inherit; font-size: inherit; color: inherit; }
@@ -45,76 +104,125 @@ button { cursor: pointer; }
 
 ::-webkit-scrollbar { width: 11px; height: 11px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #dcd2c2; border-radius: 999px; border: 3px solid var(--bg); }
-::-webkit-scrollbar-thumb:hover { background: #cbbfab; }
+::-webkit-scrollbar-thumb {
+  background: var(--surface-2);
+  border-radius: 999px;
+  border: 3px solid var(--bg);
+}
+::-webkit-scrollbar-thumb:hover { background: var(--text-faint); }
 
 /* ---------- Estructura general ---------- */
 .app { display: flex; height: 100vh; }
 
 .sidebar {
-  width: 232px;
+  width: 240px;
   flex-shrink: 0;
-  background: var(--card);
-  border-right: 1px solid var(--border);
+  background: linear-gradient(172deg, var(--side-bg) 0%, var(--side-bg2) 100%);
   display: flex;
   flex-direction: column;
-  padding: 22px 14px 14px;
+  padding: 24px 14px 16px;
+  position: relative;
+}
+/* Filo luminoso que separa el sidebar del contenido */
+.sidebar::after {
+  content: '';
+  position: absolute; top: 0; right: 0; bottom: 0; width: 1px;
+  background: linear-gradient(180deg, transparent, rgba(144, 97, 214, 0.35) 30%, transparent 90%);
 }
 
-.brand { padding: 0 10px 20px; }
-.brand h1 { margin: 0; font-size: 21px; font-weight: 800; letter-spacing: -0.3px; }
-.brand p { margin: 3px 0 0; font-size: 12px; color: var(--text-soft); }
+.brand { display: flex; align-items: center; gap: 11px; padding: 0 8px 24px; }
+.brand-mark {
+  width: 38px; height: 38px; flex-shrink: 0;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--brand-2), #6d4a9c 60%, #563982);
+  box-shadow: 0 4px 14px var(--brand-glow), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-family: var(--font-display); font-weight: 800; font-size: 19px;
+}
+.brand h1 {
+  margin: 0; font-family: var(--font-display);
+  font-size: 18px; font-weight: 700; letter-spacing: -0.3px; color: #f4effb;
+}
+.brand p { margin: 2px 0 0; font-size: 11px; color: var(--side-faint); }
 
-.nav { display: flex; flex-direction: column; gap: 3px; }
+.nav { display: flex; flex-direction: column; gap: 4px; }
 .nav button {
-  display: flex; align-items: center; gap: 10px;
-  padding: 10px 12px; border: 0; border-radius: 11px;
-  background: transparent; color: var(--text-soft);
-  font-size: 14px; font-weight: 600; text-align: left;
-  transition: background 0.12s, color 0.12s;
+  position: relative;
+  display: flex; align-items: center; gap: 11px;
+  padding: 10px 13px; border: 0; border-radius: 11px;
+  background: transparent; color: var(--side-text);
+  font-size: 13.5px; font-weight: 600; text-align: left;
+  transition: background 0.14s, color 0.14s;
 }
-.nav button:hover { background: var(--slate50); color: var(--text); }
-.nav button.active { background: var(--brand-light); color: var(--brand); }
+.nav button:hover { background: var(--side-active); color: #fff; }
+.nav button.active {
+  background: var(--side-active);
+  color: #fff;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+/* Lomo de tinta del ítem activo */
+.nav button.active::before {
+  content: '';
+  position: absolute; left: -14px; top: 9px; bottom: 9px; width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: linear-gradient(180deg, var(--brand-2), #6d4a9c);
+}
+.nav button svg { color: var(--side-faint); transition: color 0.14s; }
+.nav button:hover svg { color: var(--side-text); }
+.nav button.active svg { color: var(--brand-2); }
 
 .sidebar-foot {
-  margin-top: auto; padding: 12px 10px 0;
-  border-top: 1px solid var(--border);
-  font-size: 11px; color: var(--text-faint); line-height: 1.5;
+  margin-top: auto; padding: 14px 10px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  font-size: 11px; color: var(--side-faint); line-height: 1.55;
 }
 
+/* Botón de tema (sol/luna) del pie del sidebar */
+.theme-btn {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  margin-bottom: 10px; padding: 9px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 11px;
+  background: rgba(255, 255, 255, 0.04); color: var(--side-text);
+  font-size: 12.5px; font-weight: 600;
+  transition: background 0.14s, border-color 0.14s;
+}
+.theme-btn:hover { background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.14); }
+.theme-btn svg { color: var(--brand-2); }
+
 .main { flex: 1; min-width: 0; overflow-y: auto; }
-/* Ancho de lectura para las pantallas con texto y formularios. Las que son
-   una rejilla (cursos, horario) llevan además .wide y usan todo el monitor. */
-.page { max-width: 1320px; margin: 0 auto; padding: clamp(16px, 2.5vw, 28px) clamp(14px, 3vw, 32px) 56px; }
+.page { max-width: 1320px; margin: 0 auto; padding: clamp(18px, 2.5vw, 30px) clamp(16px, 3vw, 34px) 56px; }
 .page.wide { max-width: none; }
 
 .page-head {
   display: flex; align-items: center; justify-content: space-between;
-  flex-wrap: wrap; gap: 16px; margin-bottom: 18px;
+  flex-wrap: wrap; gap: 16px; margin-bottom: 20px;
 }
-.page-head h2 { margin: 0; font-size: 20px; font-weight: 800; }
-.page-head .sub { font-size: 13px; color: var(--text-soft); margin-top: 2px; }
+.page-head h2 {
+  margin: 0; font-family: var(--font-display);
+  font-size: 22px; font-weight: 700; letter-spacing: -0.4px;
+}
+.page-head .sub { font-size: 13px; color: var(--text-soft); margin-top: 3px; }
 
 /* ---------- Bloques ---------- */
 .card {
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 18px;
+  padding: 20px;
   box-shadow: var(--shadow);
+  transition: background 0.25s ease, border-color 0.25s ease;
 }
 .card + .card { margin-top: 14px; }
 
 .kicker {
   font-size: 10.5px; font-weight: 700; color: var(--text-faint);
-  letter-spacing: 0.6px; text-transform: uppercase;
+  letter-spacing: 0.8px; text-transform: uppercase;
 }
-.section-title { font-size: 15px; font-weight: 700; margin: 0; }
+.section-title { font-family: var(--font-display); font-size: 15px; font-weight: 700; margin: 0; }
 .hint { font-size: 12px; color: var(--text-soft); line-height: 1.55; margin: 8px 0 0; }
 .p { font-size: 13px; color: var(--text-soft); line-height: 1.55; margin: 0 0 10px; }
 .empty { color: var(--text-soft); text-align: center; padding: 22px 8px; margin: 0; }
 
-/* Las filas se parten en varias líneas antes que desbordar la tarjeta. */
 .row { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
 .row.between { justify-content: space-between; }
 .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
@@ -124,30 +232,39 @@ button { cursor: pointer; }
 /* ---------- Botones ---------- */
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 7px;
-  border-radius: 10px; padding: 9px 15px; font-weight: 700; font-size: 13px;
-  border: 1px solid transparent; transition: filter 0.12s, background 0.12s;
+  border-radius: 11px; padding: 9px 16px; font-weight: 700; font-size: 13px;
+  border: 1px solid transparent;
+  transition: filter 0.13s, background 0.13s, box-shadow 0.13s, transform 0.08s;
   white-space: nowrap;
 }
-.btn.primary { background: var(--brand); color: #fff; }
-.btn.primary:hover:not(:disabled) { background: var(--brand-dark); }
+.btn:active:not(:disabled) { transform: translateY(1px); }
+.btn.primary {
+  background: linear-gradient(135deg, var(--brand-2), #6d4a9c 85%);
+  color: #fff;
+  box-shadow: 0 4px 14px var(--brand-glow), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+.btn.primary:hover:not(:disabled) { filter: brightness(1.07); }
+[data-theme="dark"] .btn.primary { color: #17121e; }
 .btn.ghost { background: transparent; border-color: var(--border); color: var(--text); }
-.btn.ghost:hover:not(:disabled) { background: var(--slate50); }
+.btn.ghost:hover:not(:disabled) { background: var(--surface-1); }
 .btn.danger { background: var(--red); color: #fff; }
 .btn.danger:hover:not(:disabled) { filter: brightness(0.93); }
+[data-theme="dark"] .btn.danger { color: #17121e; }
 .btn.dashed {
   width: 100%; border: 1px dashed var(--border); background: transparent;
   color: var(--brand); padding: 10px; margin-top: 12px;
 }
-.btn.dashed:hover:not(:disabled) { background: var(--slate50); }
-/* Un botón apagado tiene que parecerlo, o se lee como que la app no responde. */
+.btn.dashed:hover:not(:disabled) { background: var(--brand-light); border-color: var(--brand); }
 .btn:disabled { opacity: 0.4; cursor: default; }
+.btn:focus-visible { outline: none; box-shadow: var(--ring); }
 
 .icon-btn {
   display: inline-flex; align-items: center; justify-content: center;
-  width: 28px; height: 28px; border: 0; border-radius: 8px;
+  width: 28px; height: 28px; border: 0; border-radius: 9px;
   background: transparent; color: var(--text-soft);
+  transition: background 0.12s;
 }
-.icon-btn:hover { background: var(--slate100); }
+.icon-btn:hover { background: var(--surface-2); }
 .icon-btn.tiny { width: 20px; height: 20px; }
 
 /* ---------- Campos ---------- */
@@ -155,23 +272,25 @@ button { cursor: pointer; }
 .field-label { font-size: 11.5px; color: var(--text-soft); display: flex; align-items: center; gap: 4px; }
 
 input.num, input.text, input.date-input, input.time-input, .select select {
-  width: 100%; background: var(--card);
-  border: 1px solid var(--border); border-radius: 9px;
+  width: 100%; background: var(--surface-1);
+  border: 1px solid var(--border); border-radius: 10px;
   padding: 8px 10px; color: var(--text); outline: none;
-  transition: border-color 0.12s, box-shadow 0.12s;
+  transition: border-color 0.13s, box-shadow 0.13s, background 0.13s;
 }
-input.num, input.time-input { text-align: center; }
+input.num, input.time-input { text-align: center; font-family: var(--font-display); font-weight: 600; }
 input.time-input.invalid { border-color: var(--amber); color: var(--amber); }
 input.num:focus, input.text:focus, input.date-input:focus, input.time-input:focus, .select select:focus {
   border-color: var(--brand);
-  box-shadow: 0 0 0 3px rgba(109, 74, 156, 0.13);
+  background: var(--card);
+  box-shadow: var(--ring);
 }
-input::placeholder { color: var(--text-faint); }
+input::placeholder { color: var(--text-faint); font-family: var(--font-body); font-weight: 400; }
 
 .date-row { display: flex; align-items: center; gap: 4px; }
 input.date-input { cursor: pointer; }
 input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; opacity: 0.5; }
 input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity: 1; }
+[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); }
 
 .select { position: relative; display: inline-flex; align-items: center; }
 .select select { appearance: none; padding-right: 26px; cursor: pointer; }
@@ -186,21 +305,21 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity: 1; }
 /* Switch */
 .switch {
   position: relative; width: 42px; height: 24px; flex-shrink: 0;
-  border: 0; border-radius: 999px; background: #d9cfbe; padding: 0;
-  transition: background 0.15s;
+  border: 0; border-radius: 999px; background: var(--surface-2); padding: 0;
+  transition: background 0.18s;
 }
-.switch.on { background: var(--brand); }
+.switch.on { background: linear-gradient(135deg, var(--brand-2), #6d4a9c); }
 .switch .knob {
   position: absolute; top: 3px; left: 3px;
   width: 18px; height: 18px; border-radius: 50%;
-  background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-  transition: transform 0.15s;
+  background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 .switch.on .knob { transform: translateX(18px); }
 
 .toggle-row {
   display: flex; align-items: center; gap: 14px;
-  margin-top: 14px; padding: 13px; border-radius: 12px; background: var(--slate50);
+  margin-top: 14px; padding: 13px; border-radius: var(--radius-s); background: var(--surface-1);
 }
 .toggle-row .toggle-title { font-size: 13.5px; font-weight: 700; margin: 0 0 2px; }
 .toggle-row .p { margin: 0; font-size: 12px; }
@@ -208,55 +327,104 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity: 1; }
 /* ---------- Insignias y progreso ---------- */
 .badge {
   display: inline-block; border-radius: 999px;
-  padding: 3px 11px; font-size: 12px; font-weight: 700; white-space: nowrap;
+  padding: 3px 11px; font-size: 11.5px; font-weight: 700; white-space: nowrap;
+  letter-spacing: 0.2px;
 }
 .progress-track {
-  position: relative; height: 10px; border-radius: 999px;
-  background: var(--slate100); overflow: visible;
+  position: relative; height: 9px; border-radius: 999px;
+  background: var(--surface-2); overflow: visible;
 }
-.progress-fill { height: 10px; border-radius: 999px; transition: width 0.25s ease; }
+.progress-fill {
+  height: 100%; border-radius: 999px;
+  transition: width 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
 .progress-mark {
-  position: absolute; top: -2px; width: 2px; height: 14px;
+  position: absolute; top: -3px; width: 2px; height: 15px;
   background: var(--text-soft); border-radius: 1px;
 }
 
+/* Franja de resumen del semestre (pantalla Cursos) */
+.stats-strip {
+  display: flex; flex-wrap: wrap; gap: 12px;
+  margin-bottom: 20px;
+}
+.stat {
+  flex: 1; min-width: 170px;
+  display: flex; align-items: baseline; gap: 9px;
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius-s); padding: 13px 16px;
+  box-shadow: var(--shadow);
+}
+.stat-num {
+  font-family: var(--font-display); font-size: 24px; font-weight: 800;
+  line-height: 1; font-variant-numeric: tabular-nums; letter-spacing: -0.5px;
+}
+.stat-label { font-size: 12.5px; color: var(--text-soft); font-weight: 600; }
+
 /* ---------- Lista de cursos ---------- */
-/* Flex y no grid, a propósito: con una rejilla, las columnas vacías de la
-   última fila se quedan reservadas y las tarjetas se apelmazan a la izquierda.
-   Aquí las filas completas se reparten el ancho (hasta 520 px por tarjeta) y
-   la fila incompleta —o un curso solo— queda centrada. */
 .course-grid {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: clamp(14px, 1vw, 20px);
+  gap: clamp(14px, 1.1vw, 22px);
 }
 .course-card { flex: 1 1 clamp(300px, 26vw, 420px); max-width: 520px; min-width: 0; }
 
-/* Y el contenido de la tarjeta acompaña: en una pantalla grande no tiene
-   sentido que la nota y el nombre midan lo mismo que en un portátil. */
-.course-card { padding: clamp(18px, 1.5vw, 28px); border-radius: clamp(16px, 1.2vw, 22px); }
+/* Cada tarjeta conoce su color en --c: aura superior, punto y nota lo usan. */
+.course-card {
+  position: relative;
+  overflow: hidden;
+  padding: clamp(18px, 1.5vw, 28px); border-radius: clamp(16px, 1.2vw, 22px);
+  cursor: pointer;
+  transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+}
+.course-card::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 4px;
+  background: var(--c, var(--brand));
+  opacity: 0.9;
+}
+.course-card::after {
+  content: '';
+  position: absolute; top: -70px; right: -70px; width: 190px; height: 190px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--c, var(--brand)) 0%, transparent 70%);
+  opacity: 0.09;
+  pointer-events: none;
+  transition: opacity 0.16s;
+}
+.course-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lift); border-color: var(--c, var(--brand)); }
+.course-card:hover::after { opacity: 0.16; }
+.course-card + .course-card { margin-top: 0; }
+
 .course-card .course-head { margin-bottom: clamp(12px, 1vw, 18px); }
 .course-card .course-name { font-size: clamp(15px, 1.15vw, 19px); }
 .course-card .dot { width: clamp(11px, 0.8vw, 14px); height: clamp(11px, 0.8vw, 14px); }
 .course-card .grade-row { margin-bottom: clamp(7px, 0.6vw, 11px); }
 .course-card .grade-label { font-size: clamp(12.5px, 0.95vw, 15px); }
-.course-card .grade-val { font-size: clamp(22px, 2.1vw, 38px); }
+.course-card .grade-val { font-size: clamp(24px, 2.2vw, 40px); }
 .course-card .grade-max { font-size: clamp(12px, 0.9vw, 16px); }
 .course-card .progress-track,
-.course-card .progress-fill { height: clamp(10px, 0.7vw, 14px); }
-.course-card .progress-mark { height: clamp(14px, 1vw, 19px); }
+.course-card .progress-fill { height: clamp(9px, 0.65vw, 13px); }
+.course-card .progress-mark { height: clamp(15px, 1vw, 19px); }
 .course-card .meta-row { font-size: clamp(12px, 0.9vw, 14.5px); margin-top: clamp(10px, 0.8vw, 15px); }
-.course-card { cursor: pointer; transition: transform 0.12s, box-shadow 0.12s, border-color 0.12s; }
-.course-card:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(51,45,42,0.10); border-color: #dccfba; }
-.course-card + .course-card { margin-top: 0; }
+
 .course-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
-.course-name { font-weight: 700; font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.dot { width: 11px; height: 11px; border-radius: 50%; flex-shrink: 0; }
+.course-name {
+  font-family: var(--font-display); font-weight: 700; font-size: 15px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.dot {
+  width: 11px; height: 11px; border-radius: 50%; flex-shrink: 0;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--c, var(--brand)) 18%, transparent);
+}
 .grade-row { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 7px; }
 .grade-label { color: var(--text-soft); font-size: 12.5px; }
-.grade-val { font-size: 22px; font-weight: 800; line-height: 1; }
-.grade-max { font-size: 12px; font-weight: 400; color: var(--text-faint); }
+.grade-val {
+  font-family: var(--font-display); font-size: 24px; font-weight: 800;
+  line-height: 1; font-variant-numeric: tabular-nums; letter-spacing: -0.5px;
+}
+.grade-max { font-size: 12px; font-weight: 400; color: var(--text-faint); letter-spacing: 0; }
 .meta-row { display: flex; justify-content: space-between; margin-top: 10px; font-size: 12px; color: var(--text-soft); }
 
 /* ---------- Detalle del curso ---------- */
@@ -267,31 +435,40 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity: 1; }
 .back-link:hover { text-decoration: underline; }
 
 .course-title-input {
-  flex: 1; min-width: 0; font-size: 19px; font-weight: 800;
-  border: 1px solid transparent; border-radius: 9px; background: transparent;
+  flex: 1; min-width: 0;
+  font-family: var(--font-display); font-size: 20px; font-weight: 700; letter-spacing: -0.3px;
+  border: 1px solid transparent; border-radius: 10px; background: transparent;
   padding: 6px 8px; outline: none;
+  transition: background 0.13s, border-color 0.13s;
 }
-.course-title-input:hover { background: var(--slate50); }
-.course-title-input:focus { border-color: var(--brand); background: var(--card); }
+.course-title-input:hover { background: var(--surface-1); }
+.course-title-input:focus { border-color: var(--brand); background: var(--card); box-shadow: var(--ring); }
 
 .swatches { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
-.swatch { width: 24px; height: 24px; border-radius: 50%; border: 2px solid transparent; padding: 0; }
-.swatch:hover { transform: scale(1.1); }
-.swatch.active { border-color: var(--text); box-shadow: 0 0 0 2px var(--card) inset; }
+.swatch {
+  width: 24px; height: 24px; border-radius: 50%; border: 2px solid transparent; padding: 0;
+  transition: transform 0.12s;
+}
+.swatch:hover { transform: scale(1.15); }
+.swatch.active { border-color: var(--card); box-shadow: 0 0 0 2px var(--text); }
 
-.big-grade { font-size: 36px; font-weight: 800; margin: 8px 0 10px; line-height: 1; }
-.big-grade small { font-size: 15px; font-weight: 400; color: var(--text-faint); }
+.big-grade {
+  font-family: var(--font-display); font-size: 38px; font-weight: 800;
+  margin: 8px 0 12px; line-height: 1; letter-spacing: -1px;
+  font-variant-numeric: tabular-nums;
+}
+.big-grade small { font-size: 15px; font-weight: 400; color: var(--text-faint); letter-spacing: 0; }
 
 .mini-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
-.mini-box { flex: 1; min-width: 120px; background: var(--slate50); border-radius: 10px; padding: 9px 11px; }
+.mini-box { flex: 1; min-width: 120px; background: var(--surface-1); border-radius: 10px; padding: 9px 11px; }
 .mini-box .l { font-size: 11px; color: var(--text-faint); }
-.mini-box .v { font-size: 15px; font-weight: 700; }
+.mini-box .v { font-family: var(--font-display); font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
 
 .card.next { border-left: 4px solid var(--amber); }
 .next-name { font-size: 15px; font-weight: 700; margin: 6px 0 0; }
 .notify-line {
   display: flex; align-items: center; gap: 6px; margin-top: 12px;
-  padding-top: 10px; border-top: 1px solid var(--slate100);
+  padding-top: 10px; border-top: 1px solid var(--surface-2);
   font-size: 12px; color: var(--text-soft);
 }
 
@@ -301,21 +478,20 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity: 1; }
   display: grid;
   grid-template-columns: 26px minmax(160px, 1fr) 150px 150px 70px 80px 84px 30px;
   align-items: center; gap: 8px;
-  /* Suma de las 8 columnas más los espacios. Con la ventana angosta la tabla
-     se desplaza en horizontal en vez de recortar la nota y el botón. */
   min-width: 806px;
 }
 .eval-head {
-  padding: 0 0 8px; border-bottom: 1px solid var(--slate100);
+  padding: 0 0 8px; border-bottom: 1px solid var(--surface-2);
   font-size: 10px; font-weight: 700; color: var(--text-faint);
-  text-transform: uppercase; letter-spacing: 0.4px;
+  text-transform: uppercase; letter-spacing: 0.5px;
 }
 .eval-head .c { text-align: center; }
 .eval-row {
-  padding: 7px 0; border-bottom: 1px solid var(--slate50);
+  padding: 7px 0; border-bottom: 1px solid var(--surface-1);
   background: var(--card); border-radius: 8px;
+  transition: background 0.12s;
 }
-.eval-row:hover { background: var(--slate50); }
+.eval-row:hover { background: var(--surface-1); }
 .eval-row.dragging { opacity: 0.4; }
 .eval-row.drop-target { box-shadow: inset 0 2px 0 var(--brand); }
 
@@ -328,39 +504,46 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity: 1; }
 .eval-name {
   width: 100%; border: 1px solid transparent; border-radius: 8px;
   background: transparent; padding: 6px 8px; font-weight: 600; outline: none;
+  transition: background 0.12s, border-color 0.12s;
 }
-.eval-name:hover { background: var(--card); border-color: var(--border); }
-.eval-name:focus { border-color: var(--brand); background: var(--card); }
+.eval-name:hover { background: var(--surface-1); border-color: var(--border); }
+.eval-name:focus { border-color: var(--brand); background: var(--card); box-shadow: var(--ring); }
 
 .eval-row .grade-cell { font-weight: 700; }
-.weights-sum { font-size: 12px; color: var(--text-faint); }
+.weights-sum { font-size: 12px; color: var(--text-faint); font-variant-numeric: tabular-nums; }
 .weights-sum.warn { color: var(--amber); font-weight: 700; }
 
 /* ---------- Cronograma ---------- */
-.seg { display: inline-flex; background: var(--slate100); border-radius: 10px; padding: 3px; gap: 2px; }
+.seg { display: inline-flex; background: var(--surface-2); border-radius: 11px; padding: 3px; gap: 2px; }
 .seg button {
-  border: 0; background: transparent; border-radius: 8px;
+  border: 0; background: transparent; border-radius: 9px;
   padding: 6px 14px; font-size: 12.5px; font-weight: 700; color: var(--text-faint);
+  transition: background 0.13s, color 0.13s;
 }
 .seg button.on { background: var(--card); color: var(--brand); box-shadow: var(--shadow); }
 
 .week-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
 .week-num {
-  width: 30px; height: 30px; border-radius: 9px; background: var(--brand);
-  color: #fff; font-weight: 800; display: flex; align-items: center; justify-content: center; font-size: 13px;
+  width: 30px; height: 30px; border-radius: 10px;
+  background: linear-gradient(135deg, var(--brand-2), #6d4a9c);
+  color: #fff; font-family: var(--font-display); font-weight: 800;
+  display: flex; align-items: center; justify-content: center; font-size: 13px;
+  box-shadow: 0 3px 10px var(--brand-glow);
 }
+[data-theme="dark"] .week-num { color: #17121e; }
 .sched-item {
   display: flex; align-items: center; gap: 8px; width: 100%;
-  padding: 9px 6px; border: 0; border-top: 1px solid var(--slate50);
+  padding: 9px 6px; border: 0; border-top: 1px solid var(--surface-1);
   background: transparent; text-align: left; border-radius: 8px;
+  transition: background 0.12s;
 }
-.sched-item:hover { background: var(--slate50); }
+.sched-item:hover { background: var(--surface-1); }
 .sched-course { font-weight: 600; font-size: 13px; }
 .sched-eval { color: var(--text-soft); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* Calendario */
 .cal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
-.cal-month { font-size: 16px; font-weight: 800; text-transform: capitalize; }
+.cal-month { font-family: var(--font-display); font-size: 16px; font-weight: 700; text-transform: capitalize; }
 .cal-weekdays, .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); }
 .cal-weekdays div {
   text-align: center; font-size: 11px; font-weight: 700;
@@ -370,19 +553,25 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity: 1; }
   border: 0; background: transparent; aspect-ratio: 1.35;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   gap: 3px; padding: 2px; border-radius: 10px;
+  transition: background 0.12s;
 }
-.cal-cell:hover:not(:disabled) { background: var(--slate50); }
+.cal-cell:hover:not(:disabled) { background: var(--surface-1); }
 .cal-cell:disabled { cursor: default; }
 .cal-day {
   width: 30px; height: 30px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  font-size: 13px; font-weight: 600;
+  font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums;
 }
 .cal-day.today { background: var(--brand-light); color: var(--brand); font-weight: 800; }
-.cal-day.sel { background: var(--brand); color: #fff; font-weight: 800; }
+.cal-day.sel {
+  background: linear-gradient(135deg, var(--brand-2), #6d4a9c);
+  color: #fff; font-weight: 800;
+  box-shadow: 0 3px 10px var(--brand-glow);
+}
+[data-theme="dark"] .cal-day.sel { color: #17121e; }
 .cal-dots { display: flex; gap: 3px; height: 6px; }
 .cal-dot { width: 5px; height: 5px; border-radius: 50%; }
-.cal-panel { margin-top: 14px; border-top: 1px solid var(--slate100); padding-top: 12px; }
+.cal-panel { margin-top: 14px; border-top: 1px solid var(--surface-2); padding-top: 12px; }
 .cal-panel h4 {
   margin: 0 0 4px; font-size: 13px; font-weight: 700;
   color: var(--text-soft); text-transform: capitalize;
@@ -391,50 +580,58 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity: 1; }
 /* ---------- Modales y avisos ---------- */
 .backdrop {
   --pad: clamp(14px, 4vw, 32px);
-  position: fixed; inset: 0; background: rgba(51, 45, 42, 0.42);
+  position: fixed; inset: 0; background: rgba(20, 14, 28, 0.5);
+  backdrop-filter: blur(3px);
   display: flex; align-items: center; justify-content: center; padding: var(--pad); z-index: 100;
-  animation: fade 0.12s ease;
+  animation: fade 0.14s ease;
 }
 .sheet {
   width: 100%; background: var(--card); border-radius: var(--radius);
-  padding: 20px; box-shadow: 0 18px 48px rgba(0,0,0,0.25);
+  border: 1px solid var(--border);
+  padding: 20px; box-shadow: 0 24px 60px rgba(10, 5, 20, 0.35);
   max-height: calc(100vh - 2 * var(--pad)); overflow-y: auto;
-  animation: pop 0.14s ease;
+  animation: pop 0.16s cubic-bezier(0.22, 1, 0.36, 1);
 }
-.sheet-title { font-size: 16px; font-weight: 800; margin-bottom: 10px; }
+.sheet-title { font-family: var(--font-display); font-size: 16px; font-weight: 700; margin-bottom: 10px; }
 .sheet-text { font-size: 13.5px; color: var(--text-soft); line-height: 1.6; margin: 0; }
 .sheet-text.pre { white-space: pre-line; }
 .sheet-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
 
 @keyframes fade { from { opacity: 0 } to { opacity: 1 } }
-@keyframes pop { from { opacity: 0; transform: translateY(8px) scale(0.99) } to { opacity: 1; transform: none } }
+@keyframes pop { from { opacity: 0; transform: translateY(10px) scale(0.985) } to { opacity: 1; transform: none } }
 
 .toast {
   position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%);
   display: flex; align-items: center; gap: 12px; z-index: 200;
   background: var(--card); border: 1px solid var(--border); border-radius: 12px;
-  padding: 11px 12px 11px 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.16);
-  font-size: 13px; max-width: min(560px, calc(100vw - 32px)); animation: pop 0.16s ease;
+  padding: 11px 12px 11px 16px; box-shadow: var(--shadow-lift);
+  font-size: 13px; max-width: min(560px, calc(100vw - 32px)); animation: pop 0.18s ease;
 }
 .toast.error { border-color: var(--red); color: var(--red); }
 .toast.ok { border-color: var(--emerald); }
 
 /* ---------- Tutorial ---------- */
 .onb {
-  position: fixed; inset: 0; background: var(--bg); z-index: 300;
+  position: fixed; inset: 0; z-index: 300;
+  background:
+    radial-gradient(60% 50% at 50% 0%, var(--brand-glow), transparent 70%),
+    var(--bg);
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   padding: clamp(20px, 5vw, 40px); overflow-y: auto;
 }
 .onb-skip { position: absolute; top: 22px; right: 26px; background: none; border: 0; color: var(--text-soft); font-weight: 600; }
 .onb-skip:hover { color: var(--text); }
 .onb-icon {
-  width: 116px; height: 116px; border-radius: 50%; background: var(--brand-light);
+  width: 116px; height: 116px; border-radius: 36px;
+  background: linear-gradient(145deg, var(--brand-light), var(--card));
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-lift);
   display: flex; align-items: center; justify-content: center; margin-bottom: 30px;
 }
-.onb h2 { font-size: 25px; font-weight: 800; margin: 0 0 12px; text-align: center; }
+.onb h2 { font-family: var(--font-display); font-size: 26px; font-weight: 700; letter-spacing: -0.5px; margin: 0 0 12px; text-align: center; }
 .onb p { font-size: 15.5px; color: var(--text-soft); text-align: center; max-width: min(480px, 100%); line-height: 1.6; margin: 0; }
 .onb-dots { display: flex; gap: 8px; margin: 34px 0 22px; }
-.onb-dots i { width: 8px; height: 8px; border-radius: 4px; background: var(--border); transition: width 0.15s, background 0.15s; }
+.onb-dots i { width: 8px; height: 8px; border-radius: 4px; background: var(--surface-2); transition: width 0.18s, background 0.18s; }
 .onb-dots i.on { width: 22px; background: var(--brand); }
 .onb-actions { display: flex; gap: 10px; }
 .onb .btn { padding: 11px 30px; font-size: 14px; }
@@ -443,19 +640,20 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity: 1; }
 .loading { height: 100vh; display: flex; align-items: center; justify-content: center; }
 .spinner {
   width: 34px; height: 34px; border-radius: 50%;
-  border: 3px solid var(--slate100); border-top-color: var(--brand);
+  border: 3px solid var(--surface-2); border-top-color: var(--brand);
   animation: spin 0.8s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg) } }
 
-/* La barra lateral se reduce a íconos apenas aprieta el ancho: es el trozo
-   de pantalla más caro y el que menos falta hace. Las tablas recuperan
-   156 px con esto, que es lo que separa "cabe" de "hay que desplazar". */
+/* Sidebar compacto en ventanas angostas */
 @media (max-width: 1020px) {
   .sidebar { width: 76px; padding: 18px 10px 12px; }
-  .brand p, .nav button span, .sidebar-foot { display: none; }
-  .brand h1 { font-size: 15px; text-align: center; }
+  .brand { justify-content: center; padding: 0 0 20px; }
+  .brand div:not(.brand-mark), .nav button span, .sidebar-foot { display: none; }
   .nav button { justify-content: center; }
+  .nav button.active::before { left: -10px; }
+  .theme-btn { justify-content: center; margin: auto 0 0; }
+  .theme-btn span { display: none; }
 }
 
 @media (max-width: 860px) {
@@ -464,7 +662,6 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity: 1; }
   .toggle-row { align-items: flex-start; }
 }
 
-/* Ventanas bajas: el tutorial ocupa la pantalla entera y no debe cortarse. */
 @media (max-height: 640px) {
   .onb-icon { width: 84px; height: 84px; margin-bottom: 18px; }
   .onb h2 { font-size: 21px; }
@@ -481,7 +678,7 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity: 1; }
 .link-strong:hover { color: var(--brand); text-decoration: underline; }
 .tt-tag {
   font-size: 10.5px; font-weight: 700; letter-spacing: 0.3px;
-  color: var(--text-soft); background: var(--slate100);
+  color: var(--text-soft); background: var(--surface-2);
   border-radius: 999px; padding: 3px 9px;
 }
 
@@ -496,17 +693,15 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity: 1; }
   border-bottom: 1px solid var(--border);
 }
 .tt-dayhead.today { color: var(--brand); }
-/* El relleno de abajo es para la etiqueta de la última hora: va centrada en
-   su línea, así que asoma 6 px por debajo y .tt la recortaba. */
 .tt-body { position: relative; padding: 10px 0; }
 .tt-gutter { position: relative; }
 .tt-hour {
   position: absolute; right: 9px; transform: translateY(-50%);
-  font-size: 11px; color: var(--text-faint);
+  font-size: 11px; color: var(--text-faint); font-variant-numeric: tabular-nums;
 }
-.tt-col { position: relative; border-left: 1px solid var(--slate100); }
-.tt-col.today { background: var(--slate50); }
-.tt-line { position: absolute; left: 0; right: 0; height: 1px; background: var(--slate100); }
+.tt-col { position: relative; border-left: 1px solid var(--surface-1); }
+.tt-col.today { background: var(--surface-1); }
+.tt-line { position: absolute; left: 0; right: 0; height: 1px; background: var(--surface-1); }
 .tt-now { position: absolute; left: 0; right: 0; height: 2px; background: var(--red); z-index: 3; }
 .tt-now::before {
   content: ''; position: absolute; left: -3px; top: -3px;
@@ -520,31 +715,28 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity: 1; }
   border: 1px solid; border-left-width: 3px; border-radius: 9px; cursor: pointer;
   transition: box-shadow 0.12s, filter 0.12s;
 }
-.tt-block:hover { filter: brightness(0.97); box-shadow: var(--shadow); }
-/* Borde punteado = clase virtual */
+.tt-block:hover { filter: brightness(1.04); box-shadow: var(--shadow); }
 .tt-block.virtual { border-style: dashed; border-left-style: solid; }
 .tt-block-name {
   font-size: 12.5px; font-weight: 700; line-height: 1.2;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.tt-block-time { font-size: 11px; color: var(--text-soft); }
+.tt-block-time { font-size: 11px; color: var(--text-soft); font-variant-numeric: tabular-nums; }
 .tt-block-meta {
   font-size: 10.5px; color: var(--text-faint);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .tt-block.compact { flex-direction: row; align-items: center; gap: 7px; padding: 2px 8px; }
 
-/* Tarjeta "Clases" del detalle del curso */
-/* Lista de actividades (lo del horario que no es de un curso). Ya no es una
-   tabla de nueve columnas con scroll horizontal: cada fila resume la
-   actividad y se edita en la misma hoja que las clases. */
+/* Lista de actividades del horario */
 .act-row {
   display: flex; align-items: center; gap: 10px; width: 100%;
-  padding: 9px 6px; border: 0; border-bottom: 1px solid var(--slate50);
+  padding: 9px 6px; border: 0; border-bottom: 1px solid var(--surface-1);
   border-radius: 8px; text-align: left; background: transparent;
+  transition: background 0.12s;
 }
-.act-row:hover { background: var(--slate50); }
-.act-time { width: 96px; flex-shrink: 0; font-size: 12.5px; font-weight: 700; color: var(--text); }
+.act-row:hover { background: var(--surface-1); }
+.act-time { width: 96px; flex-shrink: 0; font-size: 12.5px; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; }
 .act-bar { width: 4px; align-self: stretch; border-radius: 3px; flex-shrink: 0; }
 .act-bar.virtual { opacity: 0.4; }
 .act-main { flex: 1; min-width: 0; }
@@ -565,20 +757,21 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity: 1; }
 .hs-days { display: flex; flex-wrap: wrap; gap: 6px; }
 .hs-day {
   min-width: 46px; padding: 7px 11px; border-radius: 999px;
-  border: 1px solid var(--border); background: var(--slate50);
+  border: 1px solid var(--border); background: var(--surface-1);
   font-size: 12.5px; font-weight: 700; color: var(--text-soft);
+  transition: border-color 0.12s, background 0.12s, color 0.12s;
 }
 .hs-day:hover { border-color: var(--brand); }
 .hs-day.on { background: var(--brand-light); border-color: var(--brand); color: var(--brand-dark); }
 .hs-pills { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
 .hs-pill {
   padding: 6px 11px; border-radius: 999px;
-  border: 1px solid var(--border); background: var(--slate50);
+  border: 1px solid var(--border); background: var(--surface-1);
   font-size: 12px; font-weight: 600; color: var(--text-soft);
+  transition: border-color 0.12s, background 0.12s, color 0.12s;
 }
 .hs-pill:hover { border-color: var(--brand); }
 .hs-pill.on { background: var(--brand-light); border-color: var(--brand); color: var(--brand-dark); }
-/* "Otro…" no es un tipo más: abre el campo de texto de al lado. */
 .hs-pill.otro { border-style: dashed; }
 .hs-warn {
   display: flex; gap: 9px; margin-top: 16px; padding: 11px 12px;
@@ -588,22 +781,26 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity: 1; }
 .hs-warn ul { margin: 5px 0 4px; padding-left: 16px; color: var(--text-soft); }
 .hs-warn li { margin: 1px 0; }
 .hs-error { margin: 14px 0 0; font-size: 12.5px; font-weight: 700; color: var(--amber); text-align: right; }
-/* Antes de tocar nada el mismo texto es una guía, no un error. */
 .hs-error.suave { color: var(--text-soft); font-weight: 600; }
 .hs-del { color: var(--red); border-color: transparent; }
 .hs-del:hover { background: var(--red-bg); }
+
 /* ---------- Impresión del horario (A4 apaisado) ---------- */
-/* En pantalla no se ven: son la cabecera y la leyenda de la hoja. */
 .tt-print-head, .tt-detalle { display: none; }
 
 @media print {
   @page { size: A4 landscape; margin: 10mm; }
 
-  /* Los colores de los bloques son la mitad de la información del horario:
-     sin esto Chromium los descarta al imprimir. */
+  /* En papel siempre tokens claros, aunque la app esté en modo oscuro. */
+  :root, [data-theme="dark"] {
+    --bg: #fff; --card: #fff; --border: #ddd;
+    --surface-1: #f4f4f4; --surface-2: #e8e8e8;
+    --text: #222; --text-soft: #555; --text-faint: #999;
+    --brand: #6d4a9c; --red: #c04a42;
+  }
+
   * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 
-  /* Fuera todo lo que no es el horario. */
   .sidebar, .page-head, .card.next-class, .toast, .backdrop { display: none !important; }
   .page .hint { display: none; }
 
@@ -620,27 +817,19 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity: 1; }
   .tt-print-head h1 { margin: 0; font-size: 17px; font-weight: 800; }
   .tt-print-head span { font-size: 11px; color: var(--text-soft); }
 
-  /* Sin desplazamiento y con las columnas repartidas en el ancho de la hoja. */
   .tt { overflow: visible; }
   .tt-head, .tt-body { grid-template-columns: 42px repeat(var(--tt-cols), 1fr); }
   .tt-dayhead { font-size: 11.5px; padding-bottom: 7px; }
   .tt-hour { font-size: 9.5px; right: 7px; }
 
-  /* En papel no existe "hoy" ni la línea de la hora actual. */
   .tt-col.today { background: transparent; }
   .tt-dayhead.today { color: var(--text-soft); }
   .tt-now { display: none; }
 
-  /* En papel nada se recorta con puntos suspensivos: el nombre se parte en
-     varias líneas y el resto del dato va en una sola línea debajo. */
   .tt-block { break-inside: avoid; box-shadow: none; padding: 2px 5px; gap: 0; }
   .tt-block-name { font-size: 9px; line-height: 1.15; white-space: normal; overflow: visible; }
   .tt-block-meta { font-size: 7.5px; line-height: 1.15; white-space: normal; overflow: visible; }
 
-
-  /* Todas las clases con su dato completo, en tres columnas para que quepa.
-     Si la semana es muy cargada esto pasa a una segunda hoja, que es preferible
-     a perder el aula o la modalidad de una clase. */
   .tt-detalle {
     display: block; margin-top: 9px; padding-top: 7px;
     border-top: 1px solid var(--border); color: var(--text-soft);

@@ -8,6 +8,19 @@ export default function CoursesScreen({ onOpen, onCreate }) {
   const { state, dispatch } = useStore()
   const [toDelete, setToDelete] = useState(null)
 
+  // Resumen del semestre: cómo va cada curso, en tres números honestos.
+  const resumen = state.courses.reduce(
+    (acc, c) => {
+      const scale = effectiveScale(c, state.settings)
+      const a = analyzeCourse(c.evaluations, scale, { round: effectiveRound(c, state.settings) })
+      if (a.status === 'seguro' || a.status === 'aprobado') acc.bien += 1
+      else if (a.status === 'imposible' || a.status === 'desaprobado') acc.riesgo += 1
+      acc.pendientes += a.pending.length
+      return acc
+    },
+    { bien: 0, riesgo: 0, pendientes: 0 },
+  )
+
   return (
     <div className="page wide">
       <div className="page-head">
@@ -19,6 +32,23 @@ export default function CoursesScreen({ onOpen, onCreate }) {
           <Icon name="plus" size={15} color="#fff" /> Nuevo curso
         </button>
       </div>
+
+      {state.courses.length > 0 && (
+        <div className="stats-strip">
+          <div className="stat">
+            <span className="stat-num" style={{ color: resumen.bien > 0 ? colors.emerald : colors.textFaint }}>{resumen.bien}</span>
+            <span className="stat-label">{resumen.bien === 1 ? 'curso va bien' : 'cursos van bien'}</span>
+          </div>
+          <div className="stat">
+            <span className="stat-num" style={{ color: resumen.riesgo > 0 ? colors.red : colors.textFaint }}>{resumen.riesgo}</span>
+            <span className="stat-label">en riesgo</span>
+          </div>
+          <div className="stat">
+            <span className="stat-num" style={{ color: colors.brand }}>{resumen.pendientes}</span>
+            <span className="stat-label">{resumen.pendientes === 1 ? 'evaluación pendiente' : 'evaluaciones pendientes'}</span>
+          </div>
+        </div>
+      )}
 
       {state.courses.length === 0 ? (
         <Card>
@@ -35,6 +65,7 @@ export default function CoursesScreen({ onOpen, onCreate }) {
               <Card
                 key={c.id}
                 className="course-card"
+                style={{ '--c': c.color }}
                 onClick={() => onOpen(c.id)}
                 role="button"
                 tabIndex={0}

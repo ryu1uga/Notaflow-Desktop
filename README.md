@@ -20,6 +20,15 @@ npm run dev
 Eso levanta Vite y abre la ventana de Electron con recarga en caliente:
 cada cambio que guardes se refleja al instante.
 
+Para trabajar solo en la interfaz sin Electron, `npx vite` y abre
+`http://localhost:5173/?seed`: el parámetro `seed` llena la app con cursos
+de ejemplo (solo en desarrollo). Agrega `&dark` para partir en modo oscuro,
+o `&tab=horario` / `&course=<id>` para abrir una vista directa.
+
+La interfaz trae **modo claro y oscuro** (botón al pie de la barra lateral;
+se guarda en tus ajustes) y tipografías Inter y Sora empaquetadas, así que
+no necesita internet para verse bien.
+
 Para probar el build de producción sin generar instalador:
 
 ```bash

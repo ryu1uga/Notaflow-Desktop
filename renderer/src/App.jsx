@@ -8,7 +8,6 @@ import TimetableScreen from './screens/TimetableScreen.jsx'
 import SettingsScreen from './screens/SettingsScreen.jsx'
 import Onboarding from './components/Onboarding.jsx'
 import { Icon, Toast } from './components/ui.jsx'
-import { colors } from './theme.js'
 
 const TABS = [
   { id: 'cursos', label: 'Cursos', icon: 'book-open' },
@@ -24,8 +23,11 @@ const isPristineCourse = (c) =>
 
 function Shell() {
   const { state, dispatch } = useStore()
-  const [tab, setTab] = useState('cursos')
-  const [openCourse, setOpenCourse] = useState(null)
+  // ?tab= y ?course= permiten abrir una vista directa (útil en desarrollo).
+  const params = new URLSearchParams(window.location.search)
+  const [tab, setTab] = useState(params.get('tab') || 'cursos')
+  const theme = state.settings.theme === 'dark' ? 'dark' : 'light'
+  const [openCourse, setOpenCourse] = useState(params.get('course'))
   const [newCourseId, setNewCourseId] = useState(null)
   const [toast, setToast] = useState(null)
 
@@ -45,6 +47,14 @@ function Shell() {
     setNewCourseId(null)
     setOpenCourse(null)
   }, [openCourse, newCourseId, state.courses, dispatch])
+
+  // Aplica el tema (claro/oscuro) a todo el documento.
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme
+  }, [theme])
+
+  const toggleTheme = () =>
+    dispatch({ type: 'UPDATE_SETTINGS', patch: { theme: theme === 'dark' ? 'light' : 'dark' } })
 
   // Escape cierra el detalle del curso, igual que el botón atrás del móvil.
   useEffect(() => {
@@ -69,8 +79,11 @@ function Shell() {
     <div className="app">
       <aside className="sidebar">
         <div className="brand">
-          <h1>NotaFlow</h1>
-          <p>Tus notas, bajo control</p>
+          <div className="brand-mark">N</div>
+          <div>
+            <h1>NotaFlow</h1>
+            <p>Tus notas, bajo control</p>
+          </div>
         </div>
 
         <nav className="nav">
@@ -80,13 +93,18 @@ function Shell() {
               className={tab === t.id ? 'active' : ''}
               onClick={() => { closeCourse(); setTab(t.id) }}
             >
-              <Icon name={t.icon} size={18} color={tab === t.id ? colors.brand : colors.textFaint} />
+              <Icon name={t.icon} size={18} />
               <span>{t.label}</span>
             </button>
           ))}
         </nav>
 
-        <div className="sidebar-foot">
+        <button className="theme-btn" onClick={toggleTheme} style={{ marginTop: 'auto' }}>
+          <Icon name={theme === 'dark' ? 'sun' : 'moon'} size={15} />
+          <span>{theme === 'dark' ? 'Modo claro' : 'Modo oscuro'}</span>
+        </button>
+
+        <div className="sidebar-foot" style={{ marginTop: 0 }}>
           Todo se guarda en esta computadora.<br />
           Nada se sube a internet.
         </div>
