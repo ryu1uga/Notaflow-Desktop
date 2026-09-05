@@ -21,6 +21,8 @@ export function emptyState() {
       notifyMinute: 0,         // minuto del aviso
       notificationsOn: false,  // se activa cuando el usuario da permiso
       onboarded: false,
+      // 'system' sigue al tema del dispositivo; 'light' | 'dark' lo fijan.
+      theme: 'system',
     },
   }
 }
